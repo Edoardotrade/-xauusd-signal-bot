@@ -23,7 +23,7 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
 
 from config import Config
-from data import fetch_daily
+from data import fetch_ohlc
 from strategy import adx, atr, ema, rsi
 
 
@@ -109,15 +109,16 @@ def backtest(df: pd.DataFrame, cfg: Config) -> dict:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Backtest strategia XAUUSD")
-    parser.add_argument("--period", default="5y", help="Periodo Yahoo Finance (default 5y)")
+    parser.add_argument("--interval", default="1d", help="Timeframe: 1d (default) o 1h")
+    parser.add_argument("--period", default=None, help="Periodo Yahoo Finance (default per timeframe)")
     args = parser.parse_args()
 
     cfg = Config.load()
-    df = fetch_daily(cfg.symbol, period=args.period)
+    df = fetch_ohlc(cfg.symbol, interval=args.interval, period=args.period)
     res = backtest(df, cfg)
 
     print("=" * 48)
-    print(f"BACKTEST XAUUSD ({cfg.symbol}) — periodo {args.period}")
+    print(f"BACKTEST XAUUSD ({cfg.symbol}) — {args.interval}, {len(df)} barre")
     print("=" * 48)
     print(f"Trade totali : {res['trades']}")
     print(f"Vinti        : {res['wins']}")

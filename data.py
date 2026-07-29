@@ -12,15 +12,22 @@ _CHART_URL = "https://query1.finance.yahoo.com/v8/finance/chart/{symbol}"
 _HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
 
 
-def fetch_daily(symbol: str, period: str = "1y") -> pd.DataFrame:
-    """Scarica candele giornaliere e restituisce un DataFrame pulito.
+# Range di storico consigliato per ogni timeframe (abbastanza barre per gli indicatori).
+_DEFAULT_RANGE = {"1d": "1y", "1h": "3mo", "60m": "3mo", "30m": "1mo", "15m": "1mo"}
 
+
+def fetch_ohlc(symbol: str, interval: str = "1d", period: str | None = None) -> pd.DataFrame:
+    """Scarica candele OHLC per il timeframe richiesto e restituisce un DataFrame pulito.
+
+    interval: "1d" (giornaliero) oppure "1h" (orario), ecc.
+    period:   range storico; se None usa un default sensato per il timeframe.
     Colonne garantite: open, high, low, close, volume (minuscole).
-    L'ultima riga è la candela giornaliera più recente.
     """
+    if period is None:
+        period = _DEFAULT_RANGE.get(interval, "1y")
     resp = requests.get(
         _CHART_URL.format(symbol=symbol),
-        params={"range": period, "interval": "1d"},
+        params={"range": period, "interval": interval},
         headers=_HEADERS,
         timeout=30,
     )
@@ -52,6 +59,11 @@ def fetch_daily(symbol: str, period: str = "1y") -> pd.DataFrame:
     if df.empty:
         raise RuntimeError(f"Nessuna candela valida per '{symbol}'.")
     return df
+
+
+def fetch_daily(symbol: str, period: str = "1y") -> pd.DataFrame:
+    """Compatibilità: candele giornaliere (equivale a fetch_ohlc interval='1d')."""
+    return fetch_ohlc(symbol, interval="1d", period=period)
 
 
 def fetch_spot_price() -> float | None:

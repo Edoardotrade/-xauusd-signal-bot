@@ -10,11 +10,11 @@ from strategy import Signal
 _EMOJI = {"LONG": "🟢", "SHORT": "🔴", "NO-TRADE": "⚪️"}
 
 
-def format_message(symbol: str, sig: Signal, date_str: str) -> str:
+def format_message(symbol: str, sig: Signal, date_str: str, timeframe: str = "Daily") -> str:
     emoji = _EMOJI.get(sig.direction, "⚪️")
     prezzo_label = "Prezzo spot XAUUSD" if sig.price_is_spot else "Prezzo (future GC=F)"
     lines = [
-        f"{emoji} <b>Segnale XAUUSD</b> — {date_str}",
+        f"{emoji} <b>Segnale XAUUSD ({html.escape(timeframe)})</b> — {date_str}",
         "",
         f"<b>Direzione:</b> {sig.direction}",
         f"<b>{prezzo_label}:</b> {sig.price:.2f}",

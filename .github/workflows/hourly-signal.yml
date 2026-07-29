@@ -1,0 +1,23 @@
+name: Segnale orario XAUUSD (1H)
+
+on:
+  schedule:
+    # Ogni ora, dal lunedi al venerdi (l'oro non scambia nel weekend).
+    # NB: GitHub usa UTC e puo' ritardare di qualche minuto.
+    - cron: "5 * * * 1-5"
+  workflow_dispatch: {}   # avvio manuale dal sito
+
+jobs:
+  send-signal:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Invia il segnale 1h (solo se LONG/SHORT)
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python main.py --interval 1h --only-signals
