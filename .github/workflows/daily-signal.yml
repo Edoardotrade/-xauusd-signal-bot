@@ -18,6 +18,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          cache: "pip"          # riusa le dipendenze: esecuzioni piu' veloci, meno minuti
 
       - name: Installa le dipendenze
         run: pip install -r requirements.txt
