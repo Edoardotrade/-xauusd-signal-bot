@@ -6,6 +6,8 @@ on:
     # NB: GitHub usa sempre UTC e puo' ritardare di qualche minuto.
     - cron: "0 6 * * 1-5"
   workflow_dispatch: {}   # permette anche l'avvio manuale dal sito GitHub
+  push:
+    branches: [main]      # (temporaneo) esegue anche a ogni caricamento, per il test
 
 jobs:
   send-signal:
