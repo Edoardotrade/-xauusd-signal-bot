@@ -1,0 +1,29 @@
+name: Segnale giornaliero XAUUSD
+
+on:
+  schedule:
+    # 06:00 UTC = 08:00 ora italiana (estate) / 07:00 (inverno), da lun a ven.
+    # NB: GitHub usa sempre UTC e puo' ritardare di qualche minuto.
+    - cron: "0 6 * * 1-5"
+  workflow_dispatch: {}   # permette anche l'avvio manuale dal sito GitHub
+
+jobs:
+  send-signal:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Scarica il codice
+        uses: actions/checkout@v4
+
+      - name: Prepara Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Installa le dipendenze
+        run: pip install -r requirements.txt
+
+      - name: Invia il segnale su Telegram
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python main.py

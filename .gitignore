@@ -1,0 +1,5 @@
+# NON caricare mai questi su GitHub:
+.env
+.venv/
+__pycache__/
+*.pyc
