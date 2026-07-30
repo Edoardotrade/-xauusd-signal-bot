@@ -22,6 +22,7 @@ from config import Config
 from data import fetch_ohlc, fetch_spot_price
 from journal import record, update_open
 from market import is_market_open
+from state import already_sent, mark_sent
 from strategy import Signal, generate
 from telegram_bot import format_message, send_message
 
@@ -83,6 +84,7 @@ def run(interval: str = "1d", only_signals: bool = False, dry_run: bool = False,
     df = fetch_ohlc(cfg.symbol, interval=interval)
     spot = fetch_spot_price()  # spot XAUUSD corrente (None se la fonte non risponde)
     sig = generate(df, cfg, spot_price=spot)
+    bar_time = df.index[-1].strftime("%Y-%m-%d %H:%M:%S")  # candela di riferimento
 
     date_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     message = format_message(cfg.symbol, sig, date_str, timeframe=tf_label,
@@ -92,7 +94,6 @@ def run(interval: str = "1d", only_signals: bool = False, dry_run: bool = False,
     if not dry_run:
         update_open(tf_label, df)
         if sig.direction in ("LONG", "SHORT"):
-            bar_time = df.index[-1].strftime("%Y-%m-%d %H:%M:%S")
             dist = cfg.atr_sl_mult * sig.atr
             entry_ref = sig.decision_price
             if sig.direction == "LONG":
@@ -112,6 +113,11 @@ def run(interval: str = "1d", only_signals: bool = False, dry_run: bool = False,
               .replace("<code>", "").replace("</code>", ""))
         return 0
 
+    # Guardia anti-doppione: se questa barra e' gia' stata inviata, salta.
+    if already_sent(tf_label, bar_time):
+        print(f"[{date_str}] {tf_label}: gia' inviato per la barra {bar_time}, salto.")
+        return 0
+
     inviati, errori = 0, []
     for chat_id in cfg.chat_ids:
         try:
@@ -119,6 +125,8 @@ def run(interval: str = "1d", only_signals: bool = False, dry_run: bool = False,
             inviati += 1
         except Exception as exc:  # noqa: BLE001 - un destinatario ko non blocca gli altri
             errori.append(f"{chat_id}: {exc}")
+    if inviati > 0:
+        mark_sent(tf_label, bar_time)
     print(f"[{date_str}] {tf_label}: {sig.direction} @ {sig.price:.2f} — inviato a {inviati}/{len(cfg.chat_ids)} destinatari.")
     for err in errori:
         print(f"  ⚠️ destinatario non raggiunto -> {err}", file=sys.stderr)

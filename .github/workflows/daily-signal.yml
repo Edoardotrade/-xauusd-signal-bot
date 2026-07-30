@@ -2,9 +2,9 @@ name: Segnale giornaliero XAUUSD
 
 on:
   schedule:
-    # 06:00 UTC = 08:00 ora italiana (estate) / 07:00 (inverno), da lun a ven.
-    # NB: GitHub usa sempre UTC e puo' ritardare di qualche minuto.
-    - cron: "0 6 * * 1-5"
+    # BACKUP del Daily alle 06:20 UTC (il motore lo fa gia' alle 06:00; questo
+    # scatta solo se il motore fosse fermo — la guardia anti-doppione evita i bis).
+    - cron: "20 6 * * 1-5"
   workflow_dispatch: {}   # permette anche l'avvio manuale dal sito GitHub
 
 permissions:
@@ -31,11 +31,11 @@ jobs:
         run: |
           git config user.name "signal-bot"
           git config user.email "bot@users.noreply.github.com"
-          git add signals_log.csv || true
+          git add signals_log.csv sent_state.json || true
           if git diff --cached --quiet; then
             echo "Nessuna modifica al log."
           else
             git commit -m "log: aggiorna risultati segnali"
             git pull --rebase origin main || true
-            git push || true
+            git push origin HEAD:main || true
           fi

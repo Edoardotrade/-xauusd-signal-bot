@@ -1,0 +1,37 @@
+name: Motore segnali (always-on)
+
+on:
+  schedule:
+    - cron: "0 */5 * * *"   # riavvio ogni 5h; il job dura 5h30m -> copertura continua
+  workflow_dispatch: {}
+  push:
+    branches: [main]        # (temporaneo) avvia subito il motore
+
+# Un solo motore alla volta: il nuovo riavvio sostituisce il precedente.
+concurrency:
+  group: engine
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  engine:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350   # 5h50m (> durata del motore)
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+      - run: pip install -r requirements.txt
+      - name: Avvia il motore
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          PYTHONUNBUFFERED: "1"
+        run: |
+          git config user.name "signal-bot"
+          git config user.email "bot@users.noreply.github.com"
+          python engine.py
