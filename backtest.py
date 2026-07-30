@@ -37,6 +37,7 @@ def backtest(df: pd.DataFrame, cfg: Config) -> dict:
     df = df.dropna()
 
     trades: list[float] = []  # R multipli (+RR per win, -1 per loss)
+    durations: list[int] = []  # barre trascorse fino all'esito (SL o TP)
     i = 0
     n = len(df)
     while i < n - 1:
@@ -91,13 +92,19 @@ def backtest(df: pd.DataFrame, cfg: Config) -> dict:
             continue
 
         trades.append(outcome)
+        durations.append(j - i)  # barre trascorse dall'ingresso all'esito
         i = j + 1  # evita trade sovrapposti
 
     wins = [t for t in trades if t > 0]
     losses = [t for t in trades if t <= 0]
     total = len(trades)
     net_r = sum(trades)
+    sorted_dur = sorted(durations)
+    median_dur = sorted_dur[len(sorted_dur) // 2] if sorted_dur else 0
     return {
+        "avg_bars": (sum(durations) / len(durations)) if durations else 0.0,
+        "median_bars": median_dur,
+        "max_bars": max(durations) if durations else 0,
         "trades": total,
         "wins": len(wins),
         "losses": len(losses),
@@ -126,6 +133,9 @@ def main() -> int:
     print(f"Win rate     : {res['win_rate']:.1f}%")
     print(f"R netto       : {res['net_R']:+.2f}R")
     print(f"R medio/trade : {res['avg_R_per_trade']:+.3f}R")
+    unit = "giorni" if args.interval == "1d" else "barre"
+    print(f"Durata trade : media {res['avg_bars']:.1f} {unit}, "
+          f"mediana {res['median_bars']} {unit}, max {res['max_bars']} {unit}")
     print("-" * 48)
     if res["avg_R_per_trade"] > 0.05:
         print("Esito: possibile edge POSITIVO. Prosegui con paper-trading.")
