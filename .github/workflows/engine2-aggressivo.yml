@@ -4,8 +4,6 @@ on:
   schedule:
     - cron: "0 */5 * * *"   # riavvio ogni 5h, copertura continua (come il bot 1)
   workflow_dispatch: {}
-  push:
-    branches: [main]        # (temporaneo) avvia subito il bot 2
 
 concurrency:
   group: engine2            # gruppo separato: NON tocca il motore del bot 1
