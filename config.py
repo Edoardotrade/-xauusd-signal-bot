@@ -27,6 +27,12 @@ class Config:
     risk_reward: float
     atr_sl_mult: float
 
+    @property
+    def chat_ids(self) -> list[str]:
+        """Lista dei destinatari: TELEGRAM_CHAT_ID puo' contenere piu' id
+        separati da virgola (es. '111,222') per inviare a piu' persone."""
+        return [c.strip() for c in self.telegram_chat_id.split(",") if c.strip()]
+
     @classmethod
     def load(cls) -> "Config":
         token = os.getenv("TELEGRAM_BOT_TOKEN", "")

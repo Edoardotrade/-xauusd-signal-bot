@@ -58,9 +58,18 @@ def run(interval: str = "1d", only_signals: bool = False, dry_run: bool = False,
               .replace("<code>", "").replace("</code>", ""))
         return 0
 
-    send_message(cfg.telegram_token, cfg.telegram_chat_id, message)
-    print(f"[{date_str}] {tf_label}: segnale inviato: {sig.direction} @ {sig.price:.2f}")
-    return 0
+    inviati, errori = 0, []
+    for chat_id in cfg.chat_ids:
+        try:
+            send_message(cfg.telegram_token, chat_id, message)
+            inviati += 1
+        except Exception as exc:  # noqa: BLE001 - un destinatario ko non blocca gli altri
+            errori.append(f"{chat_id}: {exc}")
+    print(f"[{date_str}] {tf_label}: {sig.direction} @ {sig.price:.2f} — inviato a {inviati}/{len(cfg.chat_ids)} destinatari.")
+    for err in errori:
+        print(f"  ⚠️ destinatario non raggiunto -> {err}", file=sys.stderr)
+    # Fallisce solo se NESSUNO ha ricevuto (cosi' GitHub segnala l'errore).
+    return 0 if inviati > 0 else 1
 
 
 def main() -> int:
