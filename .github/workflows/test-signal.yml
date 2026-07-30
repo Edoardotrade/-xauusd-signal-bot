@@ -1,0 +1,22 @@
+name: Segnale di PROVA (manuale)
+
+on:
+  workflow_dispatch: {}   # puoi rilanciarlo quando vuoi dal sito (Actions -> Run workflow)
+  push:
+    branches: [main]      # (temporaneo) invia la prova adesso
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+      - run: pip install -r requirements.txt
+      - name: Invia il messaggio di prova
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python main.py --test

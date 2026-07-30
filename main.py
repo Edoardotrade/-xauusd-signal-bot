@@ -22,11 +22,50 @@ from config import Config
 from data import fetch_ohlc, fetch_spot_price
 from journal import record, update_open
 from market import is_market_open
-from strategy import generate
+from strategy import Signal, generate
 from telegram_bot import format_message, send_message
 
 # Etichetta leggibile del timeframe per il messaggio.
 _TF_LABEL = {"1d": "Daily", "4h": "4H", "1h": "1H", "60m": "1H", "30m": "30M", "15m": "15M"}
+
+
+def _broadcast(cfg: Config, message: str) -> int:
+    """Invia un messaggio a tutti i destinatari. Ritorna quanti l'hanno ricevuto."""
+    inviati = 0
+    for chat_id in cfg.chat_ids:
+        try:
+            send_message(cfg.telegram_token, chat_id, message)
+            inviati += 1
+        except Exception as exc:  # noqa: BLE001
+            print(f"  ⚠️ destinatario non raggiunto -> {chat_id}: {exc}", file=sys.stderr)
+    return inviati
+
+
+def run_test() -> int:
+    """Invia un MESSAGGIO DI PROVA con il formato completo (entry/SL/TP/size/stelle)."""
+    cfg = Config.load()
+    df = fetch_ohlc(cfg.symbol, interval="1d")
+    spot = fetch_spot_price()
+    sig = generate(df, cfg, spot_price=spot)
+    # Se ora non c'è un vero segnale, costruiamo un esempio LONG solo per la prova.
+    if sig.direction == "NO-TRADE":
+        entry = sig.price
+        sig = Signal(
+            direction="LONG", price=entry,
+            stop_loss=entry - cfg.atr_sl_mult * sig.atr,
+            take_profit=entry + cfg.atr_sl_mult * sig.atr * cfg.risk_reward,
+            rr=cfg.risk_reward, ema_fast=sig.ema_fast, ema_slow=sig.ema_slow,
+            rsi=sig.rsi, adx=sig.adx, atr=sig.atr,
+            reason="MESSAGGIO DI PROVA — esempio di segnale, NON operativo.",
+            price_is_spot=sig.price_is_spot, decision_price=sig.decision_price, confidence=72,
+        )
+    date_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    body = format_message(cfg.symbol, sig, date_str, timeframe="Daily",
+                          balance=cfg.account_balance, risk_perc=cfg.risk_perc)
+    message = ("🧪 <b>MESSAGGIO DI PROVA</b> — verifica del bot, non un segnale reale.\n\n" + body)
+    inviati = _broadcast(cfg, message)
+    print(f"Messaggio di prova inviato a {inviati}/{len(cfg.chat_ids)} destinatari.")
+    return 0 if inviati > 0 else 1
 
 
 def run(interval: str = "1d", only_signals: bool = False, dry_run: bool = False,
@@ -94,8 +133,11 @@ def main() -> int:
                         help="Invia solo LONG/SHORT (salta i NO-TRADE). Utile su 1h.")
     parser.add_argument("--dry-run", action="store_true", help="Non invia su Telegram, stampa a video")
     parser.add_argument("--force", action="store_true", help="Invia anche a mercato chiuso (per test)")
+    parser.add_argument("--test", action="store_true", help="Invia un MESSAGGIO DI PROVA e termina")
     args = parser.parse_args()
     try:
+        if args.test:
+            return run_test()
         return run(interval=args.interval, only_signals=args.only_signals,
                    dry_run=args.dry_run, force=args.force)
     except Exception as exc:  # noqa: BLE001 - vogliamo un errore leggibile all'utente
