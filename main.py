@@ -25,7 +25,7 @@ from strategy import generate
 from telegram_bot import format_message, send_message
 
 # Etichetta leggibile del timeframe per il messaggio.
-_TF_LABEL = {"1d": "Daily", "1h": "1H", "60m": "1H", "30m": "30M", "15m": "15M"}
+_TF_LABEL = {"1d": "Daily", "4h": "4H", "1h": "1H", "60m": "1H", "30m": "30M", "15m": "15M"}
 
 
 def run(interval: str = "1d", only_signals: bool = False, dry_run: bool = False,

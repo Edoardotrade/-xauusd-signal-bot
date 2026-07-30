@@ -16,13 +16,26 @@ _HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
 _DEFAULT_RANGE = {"1d": "1y", "1h": "3mo", "60m": "3mo", "30m": "1mo", "15m": "1mo"}
 
 
+def _resample(df: pd.DataFrame, rule: str) -> pd.DataFrame:
+    """Aggrega candele in un timeframe superiore (es. 1h -> 4h)."""
+    out = df.resample(rule, label="left", closed="left").agg(
+        {"open": "first", "high": "max", "low": "min", "close": "last", "volume": "sum"}
+    )
+    return out.dropna(subset=["open", "high", "low", "close"])
+
+
 def fetch_ohlc(symbol: str, interval: str = "1d", period: str | None = None) -> pd.DataFrame:
     """Scarica candele OHLC per il timeframe richiesto e restituisce un DataFrame pulito.
 
-    interval: "1d" (giornaliero) oppure "1h" (orario), ecc.
+    interval: "1d" (giornaliero), "1h" (orario), "4h" (aggregato da 1h), ecc.
     period:   range storico; se None usa un default sensato per il timeframe.
     Colonne garantite: open, high, low, close, volume (minuscole).
     """
+    # Yahoo non ha candele 4h native: le costruiamo aggregando le 1h.
+    if interval in ("4h", "4H"):
+        base = fetch_ohlc(symbol, interval="1h", period=period or "6mo")
+        return _resample(base, "4h")
+
     if period is None:
         period = _DEFAULT_RANGE.get(interval, "1y")
     resp = requests.get(
