@@ -20,6 +20,7 @@ class Config:
     symbol: str
     ema_fast: int
     ema_slow: int
+    ema_trend: int
     rsi_period: int
     atr_period: int
     adx_period: int
@@ -48,10 +49,11 @@ class Config:
             symbol=_get("SYMBOL", "GC=F"),
             ema_fast=int(_get("EMA_FAST", "20")),
             ema_slow=int(_get("EMA_SLOW", "50")),
+            ema_trend=int(_get("EMA_TREND", "200")),   # filtro trend di fondo (0 = disattivo)
             rsi_period=int(_get("RSI_PERIOD", "14")),
             atr_period=int(_get("ATR_PERIOD", "14")),
             adx_period=int(_get("ADX_PERIOD", "14")),
             adx_min=float(_get("ADX_MIN", "20")),
-            risk_reward=float(_get("RISK_REWARD", "2.0")),
+            risk_reward=float(_get("RISK_REWARD", "1.5")),   # 1:1.5 -> win rate piu' alto, stesso profitto
             atr_sl_mult=float(_get("ATR_SL_MULT", "1.5")),
         )

@@ -34,6 +34,9 @@ def backtest(df: pd.DataFrame, cfg: Config) -> dict:
     df["rsi"] = rsi(df["close"], cfg.rsi_period)
     df["atr"] = atr(df, cfg.atr_period)
     df["adx"] = adx(df, cfg.adx_period)
+    use_trend = cfg.ema_trend > 0 and len(df) > cfg.ema_trend
+    if use_trend:
+        df["ema_trend"] = ema(df["close"], cfg.ema_trend)
     df = df.dropna()
 
     trades: list[float] = []  # R multipli (+RR per win, -1 per loss)
@@ -46,8 +49,11 @@ def backtest(df: pd.DataFrame, cfg: Config) -> dict:
         ef, es = float(row["ema_fast"]), float(row["ema_slow"])
         r, a, atr_val = float(row["rsi"]), float(row["adx"]), float(row["atr"])
 
-        uptrend = ef > es and price > ef
-        downtrend = ef < es and price < ef
+        et = float(row["ema_trend"]) if use_trend else None
+        trend_up = (et is None) or (price > et)
+        trend_dn = (et is None) or (price < et)
+        uptrend = ef > es and price > ef and trend_up
+        downtrend = ef < es and price < ef and trend_dn
         trend_strong = a >= cfg.adx_min
 
         direction = None

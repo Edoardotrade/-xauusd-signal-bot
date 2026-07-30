@@ -104,29 +104,37 @@ def generate(df: pd.DataFrame, cfg: Config, spot_price: float | None = None) -> 
     df["rsi"] = rsi(df["close"], cfg.rsi_period)
     df["atr"] = atr(df, cfg.atr_period)
     df["adx"] = adx(df, cfg.adx_period)
+    # Filtro trend di fondo: si opera solo nella direzione della EMA lunga.
+    use_trend = cfg.ema_trend > 0 and len(df) > cfg.ema_trend
+    if use_trend:
+        df["ema_trend"] = ema(df["close"], cfg.ema_trend)
 
     last = df.iloc[-1]
     decision_price = float(last["close"])  # future: usato SOLO per decidere la direzione
     ef, es = float(last["ema_fast"]), float(last["ema_slow"])
     r, a, atr_val = float(last["rsi"]), float(last["adx"]), float(last["atr"])
+    et = float(last["ema_trend"]) if use_trend else None
 
     # Prezzo mostrato all'utente: spot se disponibile, altrimenti future.
     price = spot_price if spot_price is not None else decision_price
 
-    uptrend = ef > es and decision_price > ef
-    downtrend = ef < es and decision_price < ef
+    trend_up = (et is None) or (decision_price > et)      # sopra la EMA lunga
+    trend_dn = (et is None) or (decision_price < et)      # sotto la EMA lunga
+    uptrend = ef > es and decision_price > ef and trend_up
+    downtrend = ef < es and decision_price < ef and trend_dn
     trend_strong = a >= cfg.adx_min
 
     direction, reason = "NO-TRADE", ""
+    trend_note = f", allineato al trend EMA{cfg.ema_trend}" if use_trend else ""
 
     if not trend_strong:
         reason = f"Trend debole (ADX {a:.1f} < {cfg.adx_min:.0f}): mercato laterale, meglio stare fermi."
     elif uptrend and 50 <= r <= 70:
         direction = "LONG"
-        reason = f"Uptrend (EMA{cfg.ema_fast}>EMA{cfg.ema_slow}), RSI {r:.1f} in zona momentum, ADX {a:.1f} forte."
+        reason = f"Uptrend (EMA{cfg.ema_fast}>EMA{cfg.ema_slow}){trend_note}, RSI {r:.1f} in zona momentum, ADX {a:.1f} forte."
     elif downtrend and 30 <= r <= 50:
         direction = "SHORT"
-        reason = f"Downtrend (EMA{cfg.ema_fast}<EMA{cfg.ema_slow}), RSI {r:.1f} in zona momentum, ADX {a:.1f} forte."
+        reason = f"Downtrend (EMA{cfg.ema_fast}<EMA{cfg.ema_slow}){trend_note}, RSI {r:.1f} in zona momentum, ADX {a:.1f} forte."
     else:
         reason = (
             f"Nessun allineamento chiaro (RSI {r:.1f}, EMA fast {ef:.2f} vs slow {es:.2f}). "
