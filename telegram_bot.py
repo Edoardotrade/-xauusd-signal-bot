@@ -54,7 +54,7 @@ def format_message(symbol: str, sig: Signal, date_str: str, timeframe: str = "Da
             f"<b>Stop Loss:</b> {sig.stop_loss:.2f}",
             f"<b>Take Profit:</b> {sig.take_profit:.2f}",
             f"<b>Rischio/Rendimento:</b> 1:{sig.rr:.1f}",
-            f"<b>Affidabilità:</b> {_stars(sig.confidence)} ({sig.confidence}/100)",
+            f"<b>Forza setup:</b> {_stars(sig.confidence)} <i>(indicativa, non predittiva)</i>",
         ]
         lines += _sizing_lines(sig, balance, risk_perc)
     lines += [

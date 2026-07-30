@@ -38,6 +38,24 @@ def mark_sent(timeframe: str, bar_time: str) -> None:
         json.dump(data, fh, indent=2)
 
 
+def day_count(timeframe: str, date: str) -> int:
+    """Quanti segnali LONG/SHORT gia' inviati per questo timeframe in questa data."""
+    return _load().get("_count", {}).get(f"{timeframe}|{date}", 0)
+
+
+def day_incr(timeframe: str, date: str) -> None:
+    data = _load()
+    counts = data.get("_count", {})
+    counts[f"{timeframe}|{date}"] = counts.get(f"{timeframe}|{date}", 0) + 1
+    # Tiene solo gli ultimi ~40 contatori (bounded).
+    if len(counts) > 40:
+        for k in list(counts)[:-40]:
+            del counts[k]
+    data["_count"] = counts
+    with open(STATE_PATH, "w", encoding="utf-8") as fh:
+        json.dump(data, fh, indent=2)
+
+
 def news_seen(key: str) -> bool:
     """True se questo avviso-evento e' gia' stato inviato."""
     return key in _load().get("_news_seen", [])

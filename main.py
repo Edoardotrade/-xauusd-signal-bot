@@ -23,7 +23,7 @@ from config import Config
 from data import fetch_ohlc, fetch_spot_price
 from journal import record, update_open
 from market import is_market_open
-from state import already_sent, mark_sent
+from state import already_sent, day_count, day_incr, mark_sent
 from strategy import Signal, generate
 from telegram_bot import format_message, send_message
 
@@ -96,7 +96,9 @@ def run(interval: str = "1d", only_signals: bool = False, dry_run: bool = False,
     if label:
         message = f"⚡ <b>{label}</b>\n" + message
 
-    # Registro paper-trading: chiudi i trade risolti e registra i nuovi (no in dry-run).
+    # Registro paper-trading + capire se e' un SETUP NUOVO (record() ritorna
+    # False se c'e' gia' un trade aperto o e' la stessa barra -> niente ri-invio).
+    is_new_setup = True
     if not dry_run:
         update_open(tf_label, df)
         if sig.direction in ("LONG", "SHORT"):
@@ -106,9 +108,14 @@ def run(interval: str = "1d", only_signals: bool = False, dry_run: bool = False,
                 sl_ref, tp_ref = entry_ref - dist, entry_ref + dist * cfg.risk_reward
             else:
                 sl_ref, tp_ref = entry_ref + dist, entry_ref - dist * cfg.risk_reward
-            record(tf_label, bar_time, sig.direction, entry_ref, sl_ref, tp_ref, cfg.risk_reward)
+            is_new_setup = record(tf_label, bar_time, sig.direction, entry_ref, sl_ref, tp_ref, cfg.risk_reward)
 
-    # Anti-spam (utile su 1h): se richiesto, non inviare i NO-TRADE.
+    # Un solo avviso per setup: se il segnale e' ancora quello in corso, non ri-mandare.
+    if sig.direction in ("LONG", "SHORT") and not is_new_setup:
+        print(f"[{date_str}] {tf_label}: setup {sig.direction} gia' in corso, nessun nuovo invio.")
+        return 0
+
+    # NO-TRADE sugli intraday: non inviare.
     if only_signals and sig.direction == "NO-TRADE":
         print(f"[{date_str}] {tf_label}: NO-TRADE, nessun invio (--only-signals).")
         return 0
@@ -124,6 +131,13 @@ def run(interval: str = "1d", only_signals: bool = False, dry_run: bool = False,
         print(f"[{date_str}] {tf_label}: gia' inviato per la barra {bar_time}, salto.")
         return 0
 
+    # Tetto massimo di segnali al giorno per timeframe (sicurezza anti-flood).
+    max_day = int(os.getenv("MAX_SIGNALS_PER_DAY", "12"))
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    if sig.direction in ("LONG", "SHORT") and day_count(tf_label, today) >= max_day:
+        print(f"[{date_str}] {tf_label}: raggiunto il massimo di {max_day} segnali oggi, salto.")
+        return 0
+
     inviati, errori = 0, []
     for chat_id in cfg.chat_ids:
         try:
@@ -133,6 +147,8 @@ def run(interval: str = "1d", only_signals: bool = False, dry_run: bool = False,
             errori.append(f"{chat_id}: {exc}")
     if inviati > 0:
         mark_sent(tf_label, bar_time)
+        if sig.direction in ("LONG", "SHORT"):
+            day_incr(tf_label, today)
     print(f"[{date_str}] {tf_label}: {sig.direction} @ {sig.price:.2f} — inviato a {inviati}/{len(cfg.chat_ids)} destinatari.")
     for err in errori:
         print(f"  ⚠️ destinatario non raggiunto -> {err}", file=sys.stderr)
