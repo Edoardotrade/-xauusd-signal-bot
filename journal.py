@@ -14,7 +14,10 @@ from datetime import datetime, timezone
 
 import pandas as pd
 
-LOG_PATH = os.path.join(os.path.dirname(__file__), "signals_log.csv")
+# Profilo (vuoto = bot 1). Ogni profilo ha il suo registro separato.
+_PROFILE = os.getenv("PROFILE", "").strip()
+_SUFFIX = f"_{_PROFILE}" if _PROFILE else ""
+LOG_PATH = os.path.join(os.path.dirname(__file__), f"signals_log{_SUFFIX}.csv")
 FIELDS = [
     "logged_utc", "timeframe", "bar_time", "direction",
     "entry_ref", "sl_ref", "tp_ref", "rr",

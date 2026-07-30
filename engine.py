@@ -22,9 +22,14 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
 
 from main import run
+from journal import LOG_PATH
+from state import STATE_PATH
 
 MAX_RUNTIME = int(os.getenv("ENGINE_MAX_SECONDS", str(5 * 3600 + 30 * 60)))  # 5h30m
 POLL = 20  # secondi tra un controllo e l'altro
+# File da salvare (dipendono dal profilo: bot 1 = generici, bot 2 = con suffisso).
+_LOG_FILE = os.path.basename(LOG_PATH)
+_STATE_FILE = os.path.basename(STATE_PATH)
 
 
 def due(now: datetime) -> list[tuple[str, bool]]:
@@ -48,7 +53,7 @@ def _git(*args: str) -> int:
 
 def persist() -> None:
     """Salva log + stato nel repo (se cambiati)."""
-    _git("add", "signals_log.csv", "sent_state.json")
+    _git("add", _LOG_FILE, _STATE_FILE)
     if _git("diff", "--cached", "--quiet") != 0:  # ci sono modifiche
         _git("commit", "-m", "log/stato: aggiornamento (engine)")
         _git("pull", "--rebase", "origin", "main")

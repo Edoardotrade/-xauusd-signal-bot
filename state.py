@@ -9,7 +9,11 @@ from __future__ import annotations
 import json
 import os
 
-STATE_PATH = os.path.join(os.path.dirname(__file__), "sent_state.json")
+# Profilo (vuoto = bot 1). Ogni profilo ha il suo file di stato, cosi' due bot
+# nello stesso repo non si sovrascrivono la guardia anti-doppione.
+_PROFILE = os.getenv("PROFILE", "").strip()
+_SUFFIX = f"_{_PROFILE}" if _PROFILE else ""
+STATE_PATH = os.path.join(os.path.dirname(__file__), f"sent_state{_SUFFIX}.json")
 
 
 def _load() -> dict:

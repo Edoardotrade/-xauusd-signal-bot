@@ -9,6 +9,7 @@ Uso:
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from datetime import datetime, timezone
 
@@ -63,7 +64,9 @@ def run_test() -> int:
     date_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     body = format_message(cfg.symbol, sig, date_str, timeframe="Daily",
                           balance=cfg.account_balance, risk_perc=cfg.risk_perc)
-    message = ("🧪 <b>MESSAGGIO DI PROVA</b> — verifica del bot, non un segnale reale.\n\n" + body)
+    label = os.getenv("PROFILE_LABEL", "").strip()
+    head = (f"⚡ <b>{label}</b>\n" if label else "")
+    message = head + "🧪 <b>MESSAGGIO DI PROVA</b> — verifica del bot, non un segnale reale.\n\n" + body
     inviati = _broadcast(cfg, message)
     print(f"Messaggio di prova inviato a {inviati}/{len(cfg.chat_ids)} destinatari.")
     return 0 if inviati > 0 else 1
@@ -89,6 +92,9 @@ def run(interval: str = "1d", only_signals: bool = False, dry_run: bool = False,
     date_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     message = format_message(cfg.symbol, sig, date_str, timeframe=tf_label,
                              balance=cfg.account_balance, risk_perc=cfg.risk_perc)
+    label = os.getenv("PROFILE_LABEL", "").strip()
+    if label:
+        message = f"⚡ <b>{label}</b>\n" + message
 
     # Registro paper-trading: chiudi i trade risolti e registra i nuovi (no in dry-run).
     if not dry_run:

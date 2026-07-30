@@ -1,0 +1,43 @@
+name: Motore BOT 2 aggressivo (always-on)
+
+on:
+  # Attivato in automatico (cron ogni 5h) dopo che avrai creato il 2° canale e
+  # aggiunto il secret TELEGRAM_CHAT_ID_2. Per ora solo avvio manuale.
+  workflow_dispatch: {}
+
+concurrency:
+  group: engine2            # gruppo separato: NON tocca il motore del bot 1
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+env:
+  PROFILE: "aggr"
+  PROFILE_LABEL: "BOT 2 AGGRESSIVO · R:R 1:2 · conto 3k"
+  RISK_REWARD: "2.0"
+  ATR_SL_MULT: "1.5"
+  EMA_TREND: "200"
+  ACCOUNT_BALANCE: "3000"
+  RISK_PERC: "1.0"
+
+jobs:
+  engine2:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+      - run: pip install -r requirements.txt
+      - name: Avvia il motore del bot 2
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID_2 }}
+          PYTHONUNBUFFERED: "1"
+        run: |
+          git config user.name "signal-bot"
+          git config user.email "bot@users.noreply.github.com"
+          python engine.py

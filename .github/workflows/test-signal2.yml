@@ -1,0 +1,29 @@
+name: BOT 2 - Segnale di PROVA (manuale)
+
+on:
+  workflow_dispatch: {}
+
+env:
+  PROFILE: "aggr"
+  PROFILE_LABEL: "BOT 2 AGGRESSIVO · R:R 1:2 · conto 3k"
+  RISK_REWARD: "2.0"
+  ATR_SL_MULT: "1.5"
+  EMA_TREND: "200"
+  ACCOUNT_BALANCE: "3000"
+  RISK_PERC: "1.0"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+      - run: pip install -r requirements.txt
+      - name: Invia il messaggio di prova (bot 2)
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID_2 }}
+        run: python main.py --test
