@@ -4,8 +4,6 @@ on:
   schedule:
     - cron: "0 */5 * * *"   # riavvio ogni 5h; il job dura 5h30m -> copertura continua
   workflow_dispatch: {}
-  push:
-    branches: [main]        # (temporaneo) avvia subito il motore
 
 # Un solo motore alla volta: il nuovo riavvio sostituisce il precedente.
 concurrency:
