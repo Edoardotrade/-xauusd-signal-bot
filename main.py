@@ -46,7 +46,8 @@ def run(interval: str = "1d", only_signals: bool = False, dry_run: bool = False,
     sig = generate(df, cfg, spot_price=spot)
 
     date_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
-    message = format_message(cfg.symbol, sig, date_str, timeframe=tf_label)
+    message = format_message(cfg.symbol, sig, date_str, timeframe=tf_label,
+                             balance=cfg.account_balance, risk_perc=cfg.risk_perc)
 
     # Registro paper-trading: chiudi i trade risolti e registra i nuovi (no in dry-run).
     if not dry_run:

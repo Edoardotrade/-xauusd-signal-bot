@@ -102,31 +102,83 @@ def update_open(timeframe: str, df: pd.DataFrame) -> int:
     return closed
 
 
-def summary_text(timeframe: str | None = None) -> str:
-    """Riepilogo leggibile dei risultati chiusi (opz. filtrato per timeframe)."""
+def _stats(chiusi: list[dict]) -> dict:
+    """Metriche professionali su una lista di trade chiusi (WIN/LOSS)."""
+    rs = [float(r["result_R"]) for r in chiusi]
+    wins = [x for x in rs if x > 0]
+    losses = [x for x in rs if x <= 0]
+    tot = len(rs)
+    gross_win = sum(wins)
+    gross_loss = abs(sum(losses))
+    # Max drawdown sulla curva equity (in R) e streak di perdite.
+    eq = 0.0
+    peak = 0.0
+    max_dd = 0.0
+    streak = worst_streak = 0
+    for x in rs:
+        eq += x
+        peak = max(peak, eq)
+        max_dd = min(max_dd, eq - peak)
+        if x <= 0:
+            streak += 1
+            worst_streak = max(worst_streak, streak)
+        else:
+            streak = 0
+    return {
+        "n": tot,
+        "wins": len(wins),
+        "win_rate": 100 * len(wins) / tot if tot else 0.0,
+        "net_R": sum(rs),
+        "expectancy": sum(rs) / tot if tot else 0.0,
+        "profit_factor": (gross_win / gross_loss) if gross_loss else float("inf"),
+        "avg_win": (gross_win / len(wins)) if wins else 0.0,
+        "avg_loss": (sum(losses) / len(losses)) if losses else 0.0,
+        "max_dd": max_dd,
+        "worst_streak": worst_streak,
+    }
+
+
+def summary_text(risk_perc: float = 1.0) -> str:
+    """Report professionale del paper-trading (totale + per timeframe)."""
     rows = _read()
-    if timeframe:
-        rows = [r for r in rows if r["timeframe"] == timeframe]
     chiusi = [r for r in rows if r["status"] in ("WIN", "LOSS")]
     aperti = [r for r in rows if r["status"] == "OPEN"]
     if not chiusi:
         return (f"📊 <b>Report paper-trading</b>\nNessun trade chiuso ancora. "
                 f"Segnali aperti: {len(aperti)}.")
-    wins = [r for r in chiusi if r["status"] == "WIN"]
-    net_r = sum(float(r["result_R"]) for r in chiusi)
-    tot = len(chiusi)
-    wr = 100 * len(wins) / tot
-    scope = f" ({timeframe})" if timeframe else ""
-    return (
-        f"📊 <b>Report paper-trading{scope}</b>\n"
-        f"Trade chiusi: <b>{tot}</b>\n"
-        f"Vinti: {len(wins)} · Persi: {tot - len(wins)}\n"
-        f"Win rate: <b>{wr:.1f}%</b>\n"
-        f"Risultato totale: <b>{net_r:+.2f}R</b>\n"
-        f"Segnali ancora aperti: {len(aperti)}\n\n"
-        f"<i>Risultati calcolati sul future GC=F. Confronta col backtest "
-        f"(Daily ~52% win, +0.29R). Non è consulenza finanziaria.</i>"
-    )
+
+    s = _stats(chiusi)
+    pf = "∞" if s["profit_factor"] == float("inf") else f"{s['profit_factor']:.2f}"
+    rendimento = s["net_R"] * risk_perc  # ogni R = risk_perc% del conto
+
+    out = [f"📊 <b>Report paper-trading</b>", ""]
+
+    # Dettaglio per timeframe.
+    tfs = []
+    for tf in ["Daily", "4H", "1H", "15M"]:
+        tf_rows = [r for r in chiusi if r["timeframe"] == tf]
+        if tf_rows:
+            st = _stats(tf_rows)
+            mark = "🟢" if tf == "Daily" else "🧪"
+            tfs.append(f"{mark} <b>{tf}</b>: {st['n']} trade · win {st['win_rate']:.0f}% · {st['net_R']:+.1f}R")
+    if tfs:
+        out += ["<b>Per timeframe:</b>"] + tfs + [""]
+
+    out += [
+        "<b>TOTALE</b>",
+        f"• Trade chiusi: <b>{s['n']}</b> (vinti {s['wins']}, persi {s['n'] - s['wins']})",
+        f"• Win rate: <b>{s['win_rate']:.1f}%</b>",
+        f"• Risultato: <b>{s['net_R']:+.2f}R</b>  (~{rendimento:+.1f}% sul conto demo)",
+        f"• Expectancy: <b>{s['expectancy']:+.3f}R</b>/trade",
+        f"• Profit factor: <b>{pf}</b>  (&gt;1 = in profitto)",
+        f"• Media vinta {s['avg_win']:+.2f}R · media persa {s['avg_loss']:+.2f}R",
+        f"• Max drawdown: <b>{s['max_dd']:.2f}R</b> · peggior serie perdite: {s['worst_streak']}",
+        f"• Segnali aperti: {len(aperti)}",
+        "",
+        "<i>Risultati sul future GC=F. Confronta col backtest (Daily ~52% win, "
+        "+0.29R). Gli intraday nel backtest PERDONO. Non è consulenza finanziaria.</i>",
+    ]
+    return "\n".join(out)
 
 
 if __name__ == "__main__":

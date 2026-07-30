@@ -27,6 +27,8 @@ class Config:
     adx_min: float
     risk_reward: float
     atr_sl_mult: float
+    account_balance: float   # saldo del conto DEMO (per calcolare la size consigliata)
+    risk_perc: float         # % del saldo rischiata per trade
 
     @property
     def chat_ids(self) -> list[str]:
@@ -56,4 +58,6 @@ class Config:
             adx_min=float(_get("ADX_MIN", "20")),
             risk_reward=float(_get("RISK_REWARD", "1.5")),   # 1:1.5 -> win rate piu' alto, stesso profitto
             atr_sl_mult=float(_get("ATR_SL_MULT", "1.5")),
+            account_balance=float(_get("ACCOUNT_BALANCE", "10000")),
+            risk_perc=float(_get("RISK_PERC", "1.0")),
         )

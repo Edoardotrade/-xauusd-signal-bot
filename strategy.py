@@ -89,6 +89,7 @@ class Signal:
     reason: str
     price_is_spot: bool = False  # True se il prezzo mostrato e' lo spot XAUUSD
     decision_price: float = 0.0  # chiusura future usata per la decisione (per il log)
+    confidence: int = 0          # affidabilita' del segnale 0-100 (0 se NO-TRADE)
 
 
 def generate(df: pd.DataFrame, cfg: Config, spot_price: float | None = None) -> Signal:
@@ -152,6 +153,16 @@ def generate(df: pd.DataFrame, cfg: Config, spot_price: float | None = None) -> 
         take_profit = price - cfg.atr_sl_mult * atr_val * cfg.risk_reward
         rr = cfg.risk_reward
 
+    # Punteggio di affidabilita' 0-100 (solo se c'e' un segnale operativo).
+    confidence = 0
+    if direction in ("LONG", "SHORT"):
+        c = min(40.0, max(0.0, a - cfg.adx_min) * 2.0)         # forza del trend (ADX)
+        c += 25.0 if use_trend else 12.0                        # allineamento al trend di fondo
+        center = 60.0 if direction == "LONG" else 40.0          # centro banda RSI momentum
+        c += max(0.0, 20.0 - abs(r - center) * 2.0)             # qualita' momentum
+        c += min(15.0, (abs(ef - es) / atr_val if atr_val else 0.0) * 5.0)  # trend definito
+        confidence = int(min(100, round(c)))
+
     return Signal(
         direction=direction,
         price=price,
@@ -166,4 +177,5 @@ def generate(df: pd.DataFrame, cfg: Config, spot_price: float | None = None) -> 
         reason=reason,
         price_is_spot=spot_price is not None,
         decision_price=decision_price,
+        confidence=confidence,
     )

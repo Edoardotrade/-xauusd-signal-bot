@@ -22,12 +22,14 @@ def main() -> int:
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
-    testo = summary_text()
     if args.dry_run:
-        print(testo.replace("<b>", "").replace("</b>", "").replace("<i>", "").replace("</i>", ""))
+        testo = summary_text()
+        print(testo.replace("<b>", "").replace("</b>", "").replace("<i>", "").replace("</i>", "")
+              .replace("&gt;", ">"))
         return 0
 
     cfg = Config.load()
+    testo = summary_text(risk_perc=cfg.risk_perc)
     inviati = 0
     for chat_id in cfg.chat_ids:
         try:

@@ -8,9 +8,34 @@ import requests
 from strategy import Signal
 
 _EMOJI = {"LONG": "🟢", "SHORT": "🔴", "NO-TRADE": "⚪️"}
+_CONTRACT_OZ = 100  # XAUUSD: 1 lotto standard = 100 oz -> $100 per ogni $1 di movimento
 
 
-def format_message(symbol: str, sig: Signal, date_str: str, timeframe: str = "Daily") -> str:
+def _stars(confidence: int) -> str:
+    n = max(1, min(5, round(confidence / 20)))
+    return "⭐" * n + "☆" * (5 - n)
+
+
+def _sizing_lines(sig: Signal, balance: float, risk_perc: float) -> list[str]:
+    """Blocco gestione del rischio: quanti lotti per rischiare risk_perc% del saldo."""
+    sl_dist = abs(sig.price - sig.stop_loss)
+    tp_dist = abs(sig.take_profit - sig.price)
+    if sl_dist <= 0:
+        return []
+    risk_eur = balance * risk_perc / 100.0
+    lots = risk_eur / (sl_dist * _CONTRACT_OZ)
+    profit_eur = lots * tp_dist * _CONTRACT_OZ
+    return [
+        "",
+        f"💰 <b>Gestione rischio (DEMO {balance:,.0f})</b>",
+        f"• Rischio {risk_perc:.1f}% = {risk_eur:,.0f} → <b>~{lots:.2f} lotti</b>",
+        f"• Distanza SL: {sl_dist:.2f} $ · TP: {tp_dist:.2f} $",
+        f"• Se va a target: <b>+{profit_eur:,.0f}</b> · se va a SL: −{risk_eur:,.0f}",
+    ]
+
+
+def format_message(symbol: str, sig: Signal, date_str: str, timeframe: str = "Daily",
+                   balance: float = 10000.0, risk_perc: float = 1.0) -> str:
     emoji = _EMOJI.get(sig.direction, "⚪️")
     prezzo_label = "Prezzo spot XAUUSD" if sig.price_is_spot else "Prezzo (future GC=F)"
     lines = [
@@ -29,7 +54,9 @@ def format_message(symbol: str, sig: Signal, date_str: str, timeframe: str = "Da
             f"<b>Stop Loss:</b> {sig.stop_loss:.2f}",
             f"<b>Take Profit:</b> {sig.take_profit:.2f}",
             f"<b>Rischio/Rendimento:</b> 1:{sig.rr:.1f}",
+            f"<b>Affidabilità:</b> {_stars(sig.confidence)} ({sig.confidence}/100)",
         ]
+        lines += _sizing_lines(sig, balance, risk_perc)
     lines += [
         "",
         "<b>Indicatori:</b>",
