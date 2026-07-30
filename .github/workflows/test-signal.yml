@@ -2,6 +2,8 @@ name: Segnale di PROVA (manuale)
 
 on:
   workflow_dispatch: {}   # rilancia la prova quando vuoi dal sito (Actions -> Run workflow)
+  push:
+    branches: [main]      # (temporaneo) prova nel canale del bot 1
 
 jobs:
   test:
