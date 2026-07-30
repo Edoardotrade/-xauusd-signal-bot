@@ -2,8 +2,6 @@ name: BOT 2 - Segnale di PROVA (manuale)
 
 on:
   workflow_dispatch: {}
-  push:
-    branches: [main]      # (temporaneo) prova nel canale del bot 2
 
 env:
   PROFILE: "aggr"
