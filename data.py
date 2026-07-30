@@ -13,7 +13,7 @@ _HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
 
 
 # Range di storico consigliato per ogni timeframe (abbastanza barre per gli indicatori).
-_DEFAULT_RANGE = {"1d": "2y", "1h": "3mo", "60m": "3mo", "30m": "1mo", "15m": "1mo"}
+_DEFAULT_RANGE = {"1d": "2y", "1h": "3mo", "60m": "3mo", "30m": "60d", "15m": "60d"}
 
 
 def _resample(df: pd.DataFrame, rule: str) -> pd.DataFrame:

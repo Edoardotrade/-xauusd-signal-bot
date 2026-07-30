@@ -15,6 +15,10 @@ def format_message(symbol: str, sig: Signal, date_str: str, timeframe: str = "Da
     prezzo_label = "Prezzo spot XAUUSD" if sig.price_is_spot else "Prezzo (future GC=F)"
     lines = [
         f"{emoji} <b>Segnale XAUUSD ({html.escape(timeframe)})</b> — {date_str}",
+    ]
+    if timeframe != "Daily":
+        lines.append("🧪 <b>SPERIMENTALE — NON OPERARE</b> (backtest negativo, solo osservazione)")
+    lines += [
         "",
         f"<b>Direzione:</b> {sig.direction}",
         f"<b>{prezzo_label}:</b> {sig.price:.2f}",
