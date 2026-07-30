@@ -20,6 +20,7 @@ if hasattr(sys.stderr, "reconfigure"):
 
 from config import Config
 from data import fetch_ohlc, fetch_spot_price
+from market import is_market_open
 from strategy import generate
 from telegram_bot import format_message, send_message
 
@@ -27,9 +28,17 @@ from telegram_bot import format_message, send_message
 _TF_LABEL = {"1d": "Daily", "1h": "1H", "60m": "1H", "30m": "30M", "15m": "15M"}
 
 
-def run(interval: str = "1d", only_signals: bool = False, dry_run: bool = False) -> int:
+def run(interval: str = "1d", only_signals: bool = False, dry_run: bool = False,
+        force: bool = False) -> int:
     cfg = Config.load()
     tf_label = _TF_LABEL.get(interval, interval)
+
+    # Consapevolezza orari di mercato: niente segnali su dati vecchi a mercato chiuso.
+    open_, motivo = is_market_open()
+    if not open_ and not force:
+        ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+        print(f"[{ts}] Mercato chiuso: {motivo} Nessun invio. (usa --force per forzare)")
+        return 0
 
     df = fetch_ohlc(cfg.symbol, interval=interval)
     spot = fetch_spot_price()  # spot XAUUSD corrente (None se la fonte non risponde)
@@ -60,9 +69,11 @@ def main() -> int:
     parser.add_argument("--only-signals", action="store_true",
                         help="Invia solo LONG/SHORT (salta i NO-TRADE). Utile su 1h.")
     parser.add_argument("--dry-run", action="store_true", help="Non invia su Telegram, stampa a video")
+    parser.add_argument("--force", action="store_true", help="Invia anche a mercato chiuso (per test)")
     args = parser.parse_args()
     try:
-        return run(interval=args.interval, only_signals=args.only_signals, dry_run=args.dry_run)
+        return run(interval=args.interval, only_signals=args.only_signals,
+                   dry_run=args.dry_run, force=args.force)
     except Exception as exc:  # noqa: BLE001 - vogliamo un errore leggibile all'utente
         print(f"ERRORE: {exc}", file=sys.stderr)
         return 1
