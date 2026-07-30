@@ -1,9 +1,11 @@
 name: Motore BOT 2 aggressivo (always-on)
 
 on:
-  # Attivato in automatico (cron ogni 5h) dopo che avrai creato il 2° canale e
-  # aggiunto il secret TELEGRAM_CHAT_ID_2. Per ora solo avvio manuale.
+  schedule:
+    - cron: "0 */5 * * *"   # riavvio ogni 5h, copertura continua (come il bot 1)
   workflow_dispatch: {}
+  push:
+    branches: [main]        # (temporaneo) avvia subito il bot 2
 
 concurrency:
   group: engine2            # gruppo separato: NON tocca il motore del bot 1
