@@ -36,3 +36,18 @@ def mark_sent(timeframe: str, bar_time: str) -> None:
     data[timeframe] = bar_time
     with open(STATE_PATH, "w", encoding="utf-8") as fh:
         json.dump(data, fh, indent=2)
+
+
+def news_seen(key: str) -> bool:
+    """True se questo avviso-evento e' gia' stato inviato."""
+    return key in _load().get("_news_seen", [])
+
+
+def news_mark(key: str) -> None:
+    data = _load()
+    lst = data.get("_news_seen", [])
+    if key not in lst:
+        lst.append(key)
+    data["_news_seen"] = lst[-300:]  # tiene gli ultimi 300 (limita la dimensione)
+    with open(STATE_PATH, "w", encoding="utf-8") as fh:
+        json.dump(data, fh, indent=2)

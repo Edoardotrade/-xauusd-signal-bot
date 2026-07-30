@@ -21,6 +21,7 @@ from datetime import datetime, timezone
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
 
+import news
 from main import run
 from journal import LOG_PATH
 from state import STATE_PATH
@@ -78,6 +79,17 @@ def main() -> int:
                 persist()
             except Exception as exc:  # noqa: BLE001 - un timeframe ko non ferma il motore
                 print(f"[engine] errore su {interval}: {exc}", file=sys.stderr, flush=True)
+
+        # Avvisi eventi/news (una volta al minuto): agenda + heads-up pre-evento.
+        nkey = f"NEWS-{minute_key}"
+        if nkey not in fired:
+            fired.add(nkey)
+            try:
+                news.tick(now)
+                persist()
+            except Exception as exc:  # noqa: BLE001 - la news ko non ferma il motore
+                print(f"[engine] errore news: {exc}", file=sys.stderr, flush=True)
+
         time.sleep(POLL)
     print("[engine] terminato (riavvio schedulato).", flush=True)
     return 0
