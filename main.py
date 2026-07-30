@@ -30,6 +30,10 @@ from telegram_bot import format_message, send_message
 # Etichetta leggibile del timeframe per il messaggio.
 _TF_LABEL = {"1d": "Daily", "4h": "4H", "1h": "1H", "60m": "1H", "30m": "30M", "15m": "15M"}
 
+# Tetto di segnali al giorno per timeframe (giorni attivi -> ~6-8 in totale).
+# Override globale opzionale con la variabile MAX_SIGNALS_PER_DAY.
+_DAILY_CAP = {"Daily": 1, "4H": 1, "1H": 2, "15M": 4, "30M": 4}
+
 
 def _broadcast(cfg: Config, message: str) -> int:
     """Invia un messaggio a tutti i destinatari. Ritorna quanti l'hanno ricevuto."""
@@ -131,8 +135,9 @@ def run(interval: str = "1d", only_signals: bool = False, dry_run: bool = False,
         print(f"[{date_str}] {tf_label}: gia' inviato per la barra {bar_time}, salto.")
         return 0
 
-    # Tetto massimo di segnali al giorno per timeframe (sicurezza anti-flood).
-    max_day = int(os.getenv("MAX_SIGNALS_PER_DAY", "12"))
+    # Tetto di segnali al giorno per timeframe (per_tf di default, override globale via env).
+    _env_cap = os.getenv("MAX_SIGNALS_PER_DAY")
+    max_day = int(_env_cap) if _env_cap else _DAILY_CAP.get(tf_label, 4)
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     if sig.direction in ("LONG", "SHORT") and day_count(tf_label, today) >= max_day:
         print(f"[{date_str}] {tf_label}: raggiunto il massimo di {max_day} segnali oggi, salto.")
