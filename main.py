@@ -20,6 +20,7 @@ if hasattr(sys.stderr, "reconfigure"):
 
 from config import Config
 from data import fetch_ohlc, fetch_spot_price
+from journal import record, update_open
 from market import is_market_open
 from strategy import generate
 from telegram_bot import format_message, send_message
@@ -46,6 +47,19 @@ def run(interval: str = "1d", only_signals: bool = False, dry_run: bool = False,
 
     date_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     message = format_message(cfg.symbol, sig, date_str, timeframe=tf_label)
+
+    # Registro paper-trading: chiudi i trade risolti e registra i nuovi (no in dry-run).
+    if not dry_run:
+        update_open(tf_label, df)
+        if sig.direction in ("LONG", "SHORT"):
+            bar_time = df.index[-1].strftime("%Y-%m-%d %H:%M:%S")
+            dist = cfg.atr_sl_mult * sig.atr
+            entry_ref = sig.decision_price
+            if sig.direction == "LONG":
+                sl_ref, tp_ref = entry_ref - dist, entry_ref + dist * cfg.risk_reward
+            else:
+                sl_ref, tp_ref = entry_ref + dist, entry_ref - dist * cfg.risk_reward
+            record(tf_label, bar_time, sig.direction, entry_ref, sl_ref, tp_ref, cfg.risk_reward)
 
     # Anti-spam (utile su 1h): se richiesto, non inviare i NO-TRADE.
     if only_signals and sig.direction == "NO-TRADE":

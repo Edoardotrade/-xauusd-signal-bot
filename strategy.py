@@ -88,6 +88,7 @@ class Signal:
     atr: float
     reason: str
     price_is_spot: bool = False  # True se il prezzo mostrato e' lo spot XAUUSD
+    decision_price: float = 0.0  # chiusura future usata per la decisione (per il log)
 
 
 def generate(df: pd.DataFrame, cfg: Config, spot_price: float | None = None) -> Signal:
@@ -164,4 +165,5 @@ def generate(df: pd.DataFrame, cfg: Config, spot_price: float | None = None) -> 
         atr=atr_val,
         reason=reason,
         price_is_spot=spot_price is not None,
+        decision_price=decision_price,
     )
