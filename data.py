@@ -5,6 +5,8 @@ rispetto a librerie che vengono spesso bloccate da Yahoo.
 """
 from __future__ import annotations
 
+import time
+
 import pandas as pd
 import requests
 
@@ -79,21 +81,27 @@ def fetch_daily(symbol: str, period: str = "1y") -> pd.DataFrame:
     return fetch_ohlc(symbol, interval="1d", period=period)
 
 
-def fetch_spot_price() -> float | None:
+def fetch_spot_price(attempts: int = 3) -> float | None:
     """Prezzo spot XAUUSD corrente da gold-api.com (gratis, senza chiave).
 
     Serve a mostrare prezzo/SL/TP in linea con lo spot delle piattaforme forex
     (il future GC=F usato per lo storico ha un premio di ~50-70 punti).
-    Ritorna None se la fonte non risponde, così il bot ripiega sul future.
+    Riprova piu' volte prima di arrendersi; ritorna None solo se tutti i
+    tentativi falliscono (allora il bot ripiega sul future, dichiarandolo).
     """
-    try:
-        resp = requests.get(
-            "https://api.gold-api.com/price/XAU",
-            headers=_HEADERS,
-            timeout=15,
-        )
-        resp.raise_for_status()
-        price = float(resp.json().get("price"))
-        return price if price > 0 else None
-    except Exception:
-        return None
+    for i in range(attempts):
+        try:
+            resp = requests.get(
+                "https://api.gold-api.com/price/XAU",
+                headers=_HEADERS,
+                timeout=15,
+            )
+            resp.raise_for_status()
+            price = float(resp.json().get("price"))
+            if price > 0:
+                return price
+        except Exception:
+            pass
+        if i < attempts - 1:
+            time.sleep(2)  # breve attesa e riprova
+    return None
