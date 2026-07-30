@@ -1,9 +1,7 @@
 name: Segnale di PROVA (manuale)
 
 on:
-  workflow_dispatch: {}   # puoi rilanciarlo quando vuoi dal sito (Actions -> Run workflow)
-  push:
-    branches: [main]      # (temporaneo) invia la prova adesso
+  workflow_dispatch: {}   # rilancia la prova quando vuoi dal sito (Actions -> Run workflow)
 
 jobs:
   test:
