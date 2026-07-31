@@ -40,10 +40,6 @@ def format_message(symbol: str, sig: Signal, date_str: str, timeframe: str = "Da
     prezzo_label = "Prezzo spot XAUUSD" if sig.price_is_spot else "Prezzo (future GC=F)"
     lines = [
         f"{emoji} <b>Segnale XAUUSD ({html.escape(timeframe)})</b> — {date_str}",
-    ]
-    if timeframe != "Daily":
-        lines.append("🧪 <b>SPERIMENTALE — NON OPERARE</b> (backtest negativo, solo osservazione)")
-    lines += [
         "",
         f"<b>Direzione:</b> {sig.direction}",
         f"<b>{prezzo_label}:</b> {sig.price:.2f}",
@@ -56,6 +52,11 @@ def format_message(symbol: str, sig: Signal, date_str: str, timeframe: str = "Da
             f"<b>Rischio/Rendimento:</b> 1:{sig.rr:.1f}",
             f"<b>Forza setup:</b> {_stars(sig.confidence)} <i>(indicativa, non predittiva)</i>",
         ]
+        # Voce di rischio: sui timeframe senza vantaggio storico (intraday) il
+        # trade ha basse probabilità -> lo segnaliamo come rischioso.
+        if timeframe != "Daily":
+            lines.append("🔸 <b>Trade rischioso</b> — su questo timeframe le probabilità "
+                         "sono basse: valuta con prudenza o lascialo perdere.")
         lines += _sizing_lines(sig, balance, risk_perc)
     lines += [
         "",
