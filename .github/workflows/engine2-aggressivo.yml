@@ -2,8 +2,10 @@ name: Motore BOT 2 aggressivo (always-on)
 
 on:
   schedule:
-    - cron: "0 */5 * * *"   # riavvio ogni 5h, copertura continua (come il bot 1)
+    - cron: "0 */5 * * *"   # rete di sicurezza
   workflow_dispatch: {}
+  push:
+    branches: [main]        # (temporaneo) avvio del bot 2
 
 concurrency:
   group: engine2            # gruppo separato: NON tocca il motore del bot 1
@@ -11,6 +13,7 @@ concurrency:
 
 permissions:
   contents: write
+  actions: write            # per auto-riavviarsi
 
 env:
   PROFILE: "aggr"
@@ -41,3 +44,13 @@ jobs:
           git config user.name "signal-bot"
           git config user.email "bot@users.noreply.github.com"
           python engine.py
+      - name: Auto-riavvio (catena)
+        if: always()
+        run: |
+          for i in 1 2 3; do
+            curl -sf -X POST \
+              -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/${{ github.repository }}/actions/workflows/engine2-aggressivo.yml/dispatches" \
+              -d '{"ref":"main"}' && { echo "re-dispatch OK"; break; } || { echo "tentativo $i fallito"; sleep 5; }
+          done

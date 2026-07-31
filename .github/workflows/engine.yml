@@ -4,8 +4,6 @@ on:
   schedule:
     - cron: "0 */5 * * *"   # rete di sicurezza (i cron di GitHub sono inaffidabili)
   workflow_dispatch: {}
-  push:
-    branches: [main]        # (temporaneo) avvio + test della catena
 
 concurrency:
   group: engine
@@ -19,8 +17,6 @@ jobs:
   engine:
     runs-on: ubuntu-latest
     timeout-minutes: 350
-    env:
-      ENGINE_MAX_SECONDS: "120"   # TEST: ciclo breve per verificare la catena
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
