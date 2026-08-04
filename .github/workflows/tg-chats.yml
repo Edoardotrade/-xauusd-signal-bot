@@ -2,8 +2,6 @@ name: Trova ID chat/canali
 
 on:
   workflow_dispatch: {}
-  push:
-    branches: [main]      # (temporaneo) cerca gli ID ora
 
 jobs:
   find:
