@@ -1,8 +1,0 @@
-CAPITAL_ACCOUNT_ID usato = '32681708394879390'
-  conto trovato: id='326817083894879390' saldo=10000.02
-  conto trovato: id='326830282329379998' saldo=3015.29
-spot (gold-api) = 4089.0
-daily-like (sl 66, tp 99) -> dati-non-validi
-15m-like (sl 22, tp 33) -> dati-non-validi
-stretto-10 (sl 10, tp 15) -> dati-non-validi
-cleanup: OK: chiuse 0 posizione/i GOLD.

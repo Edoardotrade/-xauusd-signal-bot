@@ -2,8 +2,6 @@ name: Diagnostico esecuzione
 
 on:
   workflow_dispatch: {}
-  push:
-    branches: [main]      # (temporaneo) esegue il diagnostico ora
 
 permissions:
   contents: write
