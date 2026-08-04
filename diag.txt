@@ -1,0 +1,5 @@
+spot (gold-api) = 4088.800049
+daily-like (sl 66, tp 99) -> dati-non-validi
+15m-like (sl 22, tp 33) -> dati-non-validi
+stretto-10 (sl 10, tp 15) -> dati-non-validi
+cleanup: OK: chiuse 0 posizione/i GOLD.
