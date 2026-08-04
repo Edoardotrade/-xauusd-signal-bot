@@ -105,6 +105,20 @@ def update_open(timeframe: str, df: pd.DataFrame) -> int:
     return closed
 
 
+def recent_closed_text(n: int = 10) -> str:
+    """Testo HTML con le ultime N operazioni CHIUSE (esito + R)."""
+    chiusi = [r for r in _read() if r["status"] in ("WIN", "LOSS", "EXPIRED")]
+    if not chiusi:
+        return "🗒 <b>Storico operazioni</b>\nNessuna operazione chiusa ancora."
+    ultime = chiusi[-n:]
+    righe = [f"🗒 <b>Ultime {len(ultime)} operazioni chiuse</b>"]
+    for r in reversed(ultime):  # più recenti in alto
+        em = "✅" if r["status"] == "WIN" else ("❌" if r["status"] == "LOSS" else "➖")
+        quando = (r.get("closed_utc") or r.get("bar_time") or "")[:10]
+        righe.append(f"{em} {quando} · {r['timeframe']} {r['direction']} → {r['result_R']}R")
+    return "\n".join(righe)
+
+
 def _stats(chiusi: list[dict]) -> dict:
     """Metriche professionali su una lista di trade chiusi (WIN/LOSS)."""
     rs = [float(r["result_R"]) for r in chiusi]

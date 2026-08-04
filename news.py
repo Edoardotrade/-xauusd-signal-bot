@@ -71,8 +71,10 @@ def tick(now: datetime | None = None) -> None:
         wkey = "WINRATE-" + now.strftime("%Y-%m-%d")
         if not news_seen(wkey):
             try:
-                from journal import summary_text
-                _broadcast(cfg, "📅 <b>Riepilogo giornaliero</b>\n\n" + summary_text(cfg.risk_perc))
+                from journal import summary_text, recent_closed_text
+                msg = ("📅 <b>Riepilogo giornaliero</b>\n\n" + summary_text(cfg.risk_perc)
+                       + "\n\n" + recent_closed_text(10))
+                _broadcast(cfg, msg)
             except Exception as exc:  # noqa: BLE001
                 print(f"[news] report winrate ko: {exc}")
             news_mark(wkey)
