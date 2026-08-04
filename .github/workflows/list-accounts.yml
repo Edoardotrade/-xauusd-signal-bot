@@ -2,8 +2,6 @@ name: Elenca conti demo (su Telegram)
 
 on:
   workflow_dispatch: {}
-  push:
-    branches: [main]      # (temporaneo) rimanda la lista aggiornata
 
 jobs:
   list:
