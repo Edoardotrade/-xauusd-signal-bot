@@ -1,0 +1,29 @@
+name: Apri/chiudi posizione di prova (demo)
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "open o close"
+        default: "open"
+  push:
+    branches: [main]      # (temporaneo) apre subito una posizione visibile
+
+jobs:
+  manage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+      - run: pip install -r requirements.txt
+      - name: Apri/chiudi posizione di prova
+        env:
+          CAPITAL_API_KEY: ${{ secrets.CAPITAL_API_KEY }}
+          CAPITAL_IDENTIFIER: ${{ secrets.CAPITAL_IDENTIFIER }}
+          CAPITAL_PASSWORD: ${{ secrets.CAPITAL_PASSWORD }}
+          CAPITAL_ACCOUNT_ID: ${{ secrets.CAPITAL_ACCOUNT_ID }}
+          PYTHONUNBUFFERED: "1"
+        run: python broker_manage.py ${{ github.event.inputs.action || 'open' }}
