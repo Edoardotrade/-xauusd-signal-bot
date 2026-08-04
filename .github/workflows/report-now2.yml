@@ -2,8 +2,6 @@ name: Report conto bot 2 (ora)
 
 on:
   workflow_dispatch: {}
-  push:
-    branches: [main]      # (temporaneo) invia subito il report del conto 2
 
 jobs:
   report:
