@@ -1,0 +1,25 @@
+name: Trade di PROVA bot 2 (conto 2)
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [main]      # (temporaneo) test esecuzione sul conto 2
+
+jobs:
+  testtrade2:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+      - run: pip install -r requirements.txt
+      - name: Trade di prova sul conto 2 (apre e richiude)
+        env:
+          CAPITAL_API_KEY: ${{ secrets.CAPITAL_API_KEY }}
+          CAPITAL_IDENTIFIER: ${{ secrets.CAPITAL_IDENTIFIER }}
+          CAPITAL_PASSWORD: ${{ secrets.CAPITAL_PASSWORD }}
+          CAPITAL_ACCOUNT_ID: ${{ secrets.CAPITAL_ACCOUNT_ID_2 }}
+          PYTHONUNBUFFERED: "1"
+        run: python broker_testtrade.py

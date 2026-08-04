@@ -4,6 +4,8 @@ on:
   schedule:
     - cron: "0 */5 * * *"   # rete di sicurezza
   workflow_dispatch: {}
+  push:
+    branches: [main]        # (temporaneo) riavvio per attivare l'esecuzione bot 2
 
 concurrency:
   group: engine2            # gruppo separato: NON tocca il motore del bot 1
@@ -37,6 +39,10 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID_2 }}
+          CAPITAL_API_KEY: ${{ secrets.CAPITAL_API_KEY }}
+          CAPITAL_IDENTIFIER: ${{ secrets.CAPITAL_IDENTIFIER }}
+          CAPITAL_PASSWORD: ${{ secrets.CAPITAL_PASSWORD }}
+          CAPITAL_ACCOUNT_ID: ${{ secrets.CAPITAL_ACCOUNT_ID_2 }}
           PYTHONUNBUFFERED: "1"
         run: |
           git config user.name "signal-bot"
