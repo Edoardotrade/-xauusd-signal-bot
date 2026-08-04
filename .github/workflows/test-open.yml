@@ -26,4 +26,4 @@ jobs:
           CAPITAL_PASSWORD: ${{ secrets.CAPITAL_PASSWORD }}
           CAPITAL_ACCOUNT_ID: ${{ secrets.CAPITAL_ACCOUNT_ID }}
           PYTHONUNBUFFERED: "1"
-        run: python broker_manage.py ${{ github.event.inputs.action || 'open' }}
+        run: python broker_manage.py close
