@@ -15,6 +15,7 @@ già una posizione aperta sull'oro, il nuovo segnale viene saltato.
 from __future__ import annotations
 
 import os
+import time
 
 import requests
 
@@ -70,6 +71,62 @@ def status() -> dict | None:
     except Exception as exc:  # noqa: BLE001
         print(f"[broker] errore lettura conti: {exc}")
         return None
+
+
+def test_trade() -> str:
+    """Test end-to-end: apre una posizione GOLD minima sul demo e la richiude
+    subito. Ritorna 'OK: ...' se il giro completo funziona, altrimenti 'ERR: ...'."""
+    tok = _login()
+    if not tok:
+        return "ERR: sessione non creata (credenziali?)"
+    cst, xst = tok
+    h = _h(cst, xst)
+    acc = os.getenv("CAPITAL_ACCOUNT_ID", "")
+    if acc:
+        try:
+            requests.put(f"{_BASE}/api/v1/session", headers=h, json={"accountId": acc}, timeout=_TIMEOUT)
+        except Exception:
+            pass
+
+    minsize, bid = 1.0, None
+    try:
+        mk = requests.get(f"{_BASE}/api/v1/markets/{_EPIC}", headers=h, timeout=_TIMEOUT).json()
+        minsize = float(mk.get("dealingRules", {}).get("minDealSize", {}).get("value", 1) or 1)
+        bid = float(mk.get("snapshot", {}).get("bid", 0) or 0) or None
+    except Exception:
+        pass
+
+    # Apertura posizione minima (senza SL/TP: la chiudiamo subito).
+    body = {"epic": _EPIC, "direction": "BUY", "size": minsize}
+    r = requests.post(f"{_BASE}/api/v1/positions", headers=h, json=body, timeout=_TIMEOUT)
+    if r.status_code >= 300:
+        return f"ERR: apertura fallita {r.status_code} {r.text[:180]}"
+    ref = r.json().get("dealReference", "")
+
+    time.sleep(2)  # attende la conferma
+    try:
+        conf = requests.get(f"{_BASE}/api/v1/confirms/{ref}", headers=h, timeout=_TIMEOUT).json()
+        if conf.get("dealStatus") != "ACCEPTED":
+            return f"ERR: ordine non accettato ({conf.get('reason')})"
+    except Exception:
+        pass
+
+    # Chiude tutte le posizioni GOLD (dovrebbe esserci solo la nostra di test).
+    chiuse = 0
+    try:
+        pos = requests.get(f"{_BASE}/api/v1/positions", headers=h, timeout=_TIMEOUT).json()
+        for p in pos.get("positions", []):
+            if p.get("market", {}).get("epic") == _EPIC:
+                deal_id = p.get("position", {}).get("dealId")
+                if deal_id:
+                    requests.delete(f"{_BASE}/api/v1/positions/{deal_id}", headers=h, timeout=_TIMEOUT)
+                    chiuse += 1
+    except Exception as exc:  # noqa: BLE001
+        return f"OK-parziale: aperto (~{bid}) ma chiusura non confermata ({exc}). Controlla l'app."
+
+    if chiuse:
+        return f"OK: aperto e richiuso {chiuse} posizione/i GOLD (prezzo ~{bid}, size {minsize}). Esecuzione FUNZIONA."
+    return f"OK-parziale: ordine accettato (ref {ref}) ma nessuna posizione da chiudere trovata. Controlla l'app."
 
 
 def execute_if_flat(direction: str, entry: float, sl: float, tp: float,
