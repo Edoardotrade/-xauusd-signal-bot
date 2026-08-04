@@ -66,6 +66,17 @@ def tick(now: datetime | None = None) -> None:
                 print(f"[news] report conto ko: {exc}")
             news_mark(rkey)
 
+    # Report giornaliero del WIN RATE (una volta, alle 20:05 UTC).
+    if now.hour == 20 and now.minute == 5:
+        wkey = "WINRATE-" + now.strftime("%Y-%m-%d")
+        if not news_seen(wkey):
+            try:
+                from journal import summary_text
+                _broadcast(cfg, "📅 <b>Riepilogo giornaliero</b>\n\n" + summary_text(cfg.risk_perc))
+            except Exception as exc:  # noqa: BLE001
+                print(f"[news] report winrate ko: {exc}")
+            news_mark(wkey)
+
 
 def main() -> int:
     p = argparse.ArgumentParser(description="Avvisi eventi/news oro")
