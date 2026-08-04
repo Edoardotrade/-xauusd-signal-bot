@@ -54,6 +54,24 @@ def _h(cst: str, xst: str) -> dict:
             "CST": cst, "X-SECURITY-TOKEN": xst, "Content-Type": "application/json"}
 
 
+def status() -> dict | None:
+    """Verifica la connessione: login + lettura conti. None se fallisce.
+    Non apre nessun trade. Serve per il test delle credenziali."""
+    tok = _login()
+    if not tok:
+        return None
+    cst, xst = tok
+    try:
+        accs = requests.get(f"{_BASE}/api/v1/accounts", headers=_h(cst, xst),
+                            timeout=_TIMEOUT).json()
+        conti = [{"id": a.get("accountId"), "saldo": a.get("balance", {}).get("balance")}
+                 for a in accs.get("accounts", [])]
+        return {"ok": True, "conti": conti}
+    except Exception as exc:  # noqa: BLE001
+        print(f"[broker] errore lettura conti: {exc}")
+        return None
+
+
 def execute_if_flat(direction: str, entry: float, sl: float, tp: float,
                     risk_perc: float) -> str:
     tok = _login()

@@ -1,0 +1,24 @@
+name: Test connessione conto demo Capital
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [main]      # (temporaneo) verifica connessione ora
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+      - run: pip install -r requirements.txt
+      - name: Verifica connessione al conto demo
+        env:
+          CAPITAL_API_KEY: ${{ secrets.CAPITAL_API_KEY }}
+          CAPITAL_IDENTIFIER: ${{ secrets.CAPITAL_IDENTIFIER }}
+          CAPITAL_PASSWORD: ${{ secrets.CAPITAL_PASSWORD }}
+          PYTHONUNBUFFERED: "1"
+        run: python broker_check.py

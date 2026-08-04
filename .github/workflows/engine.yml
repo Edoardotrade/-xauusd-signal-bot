@@ -4,6 +4,8 @@ on:
   schedule:
     - cron: "0 */5 * * *"   # rete di sicurezza (i cron di GitHub sono inaffidabili)
   workflow_dispatch: {}
+  push:
+    branches: [main]        # (temporaneo) riavvio per attivare l'esecuzione Capital
 
 concurrency:
   group: engine
@@ -28,6 +30,9 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          CAPITAL_API_KEY: ${{ secrets.CAPITAL_API_KEY }}
+          CAPITAL_IDENTIFIER: ${{ secrets.CAPITAL_IDENTIFIER }}
+          CAPITAL_PASSWORD: ${{ secrets.CAPITAL_PASSWORD }}
           PYTHONUNBUFFERED: "1"
         run: |
           git config user.name "signal-bot"
