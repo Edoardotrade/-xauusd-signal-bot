@@ -12,7 +12,31 @@ vecchi, non a fare timing di precisione.
 """
 from __future__ import annotations
 
+import os
 from datetime import datetime, timezone
+
+try:
+    from zoneinfo import ZoneInfo
+    _ROME = ZoneInfo("Europe/Rome")
+except Exception:  # tzdata mancante: fallback semplice (UTC+2, estate)
+    _ROME = None
+
+# Fascia operativa in ora ITALIANA (configurabile). Trade solo tra le due ore.
+_TRADE_START = int(os.getenv("TRADE_START_HOUR", "8"))
+_TRADE_END = int(os.getenv("TRADE_END_HOUR", "22"))
+
+
+def in_trading_window(now: datetime | None = None) -> tuple[bool, str]:
+    """True se l'ora italiana e' nella fascia operativa (default 08:00-22:00)."""
+    now = now or datetime.now(timezone.utc)
+    if _ROME is not None:
+        h = now.astimezone(_ROME).hour
+    else:
+        h = (now.hour + 2) % 24  # fallback ~UTC+2 (estate) se tzdata assente
+    if _TRADE_START <= h < _TRADE_END:
+        return True, ""
+    return False, (f"Fuori orario operativo ({_TRADE_START:02d}:00-{_TRADE_END:02d}:00 "
+                   "ora italiana): nessun trade.")
 
 
 def is_market_open(now: datetime | None = None) -> tuple[bool, str]:
