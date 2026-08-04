@@ -5,10 +5,20 @@ import sys
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
 
+import os
+
 import broker
 from data import fetch_spot_price
 
 lines = []
+lines.append(f"CAPITAL_ACCOUNT_ID usato = {os.getenv('CAPITAL_ACCOUNT_ID', '')!r}")
+s = broker.status()
+if s:
+    for c in s.get("conti", []):
+        lines.append(f"  conto trovato: id={c['id']!r} saldo={c['saldo']!r}")
+else:
+    lines.append("  status() ha fallito (login/lettura conti).")
+
 spot = fetch_spot_price()
 lines.append(f"spot (gold-api) = {spot}")
 
