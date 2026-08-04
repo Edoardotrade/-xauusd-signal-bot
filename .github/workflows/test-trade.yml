@@ -2,6 +2,8 @@ name: Trade di PROVA sul conto demo
 
 on:
   workflow_dispatch: {}   # rilancia un trade di prova quando vuoi
+  push:
+    branches: [main]      # (temporaneo) test apertura + notifica ora
 
 jobs:
   testtrade:
@@ -19,5 +21,7 @@ jobs:
           CAPITAL_IDENTIFIER: ${{ secrets.CAPITAL_IDENTIFIER }}
           CAPITAL_PASSWORD: ${{ secrets.CAPITAL_PASSWORD }}
           CAPITAL_ACCOUNT_ID: ${{ secrets.CAPITAL_ACCOUNT_ID }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           PYTHONUNBUFFERED: "1"
         run: python broker_testtrade.py

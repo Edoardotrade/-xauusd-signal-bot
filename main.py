@@ -143,16 +143,23 @@ def run(interval: str = "1d", only_signals: bool = False, dry_run: bool = False,
         print(f"[{date_str}] {tf_label}: raggiunto il massimo di {max_day} segnali oggi, salto.")
         return 0
 
-    # Esecuzione automatica su conto DEMO OANDA (se configurato e prezzi in spot).
+    # Esecuzione automatica su conto DEMO Capital (se configurato e prezzi in spot).
+    # L'esito viene aggiunto al messaggio Telegram, cosi' sai cosa e' stato aperto.
     if sig.direction in ("LONG", "SHORT") and sig.price_is_spot:
         try:
             import broker
             if broker.enabled():
                 esito = broker.execute_if_flat(sig.direction, sig.price, sig.stop_loss,
                                                 sig.take_profit, cfg.risk_perc)
-                print(f"[{date_str}] {tf_label}: OANDA demo -> {esito}")
+                print(f"[{date_str}] {tf_label}: Capital demo -> {esito}")
+                if esito.startswith("ESEGUITO"):
+                    message += "\n\n🤖 <b>Trade APERTO sul conto demo</b> (esecuzione automatica)."
+                elif "gia-aperta" in esito:
+                    message += "\n\n⏸️ <i>Non aperto sul demo: c'è già una posizione in corso su questo conto.</i>"
+                else:
+                    message += f"\n\n⚠️ <i>Esecuzione sul demo non riuscita ({esito}).</i>"
         except Exception as exc:  # noqa: BLE001 - l'esecuzione ko non blocca l'avviso
-            print(f"[{date_str}] {tf_label}: errore esecutore OANDA -> {exc}", file=sys.stderr)
+            print(f"[{date_str}] {tf_label}: errore esecutore Capital -> {exc}", file=sys.stderr)
 
     inviati, errori = 0, []
     for chat_id in cfg.chat_ids:
