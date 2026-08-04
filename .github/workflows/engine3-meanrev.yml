@@ -4,8 +4,6 @@ on:
   schedule:
     - cron: "0 */5 * * *"   # rete di sicurezza
   workflow_dispatch: {}
-  push:
-    branches: [main]        # (temporaneo) riavvio con l'ID canale 3 corretto
 
 concurrency:
   group: engine3            # gruppo separato: non tocca bot 1 e bot 2
