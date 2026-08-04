@@ -2,8 +2,6 @@ name: Mappatura conti + chiudi prove
 
 on:
   workflow_dispatch: {}
-  push:
-    branches: [main]      # (temporaneo) invia mappatura e chiude le prove
 
 jobs:
   map:
