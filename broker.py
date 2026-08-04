@@ -1,13 +1,16 @@
-"""Esecutore automatico su conto DEMO OANDA (ambiente 'practice').
+"""Esecutore automatico su conto DEMO Capital.com.
 
-SICUREZZA: questo modulo parla SOLO con l'endpoint demo di OANDA
-(api-fxpractice.oanda.com). Non esegue e non deve MAI eseguire su conti reali.
-Nessun trade con soldi veri.
+SICUREZZA: parla SOLO con l'endpoint DEMO (demo-api-capital.backend-capital.com).
+Non esegue e non deve MAI eseguire su conti reali. Nessun trade con soldi veri.
 
-Serve OANDA_API_TOKEN e OANDA_ACCOUNT_ID (dai secrets del workflow).
-Modello: UNA posizione alla volta per conto (come nel trading reale su un
-account a compensazione). Se c'è già una posizione aperta, il nuovo segnale
-viene saltato.
+Credenziali (dai secrets del workflow):
+  CAPITAL_API_KEY      chiave API (generata nell'app Capital.com)
+  CAPITAL_IDENTIFIER   email di login
+  CAPITAL_PASSWORD     password della chiave API
+  CAPITAL_ACCOUNT_ID   (opzionale) id del conto demo su cui operare
+
+Modello: UNA posizione alla volta per conto (come nel trading reale). Se c'è
+già una posizione aperta sull'oro, il nuovo segnale viene saltato.
 """
 from __future__ import annotations
 
@@ -16,85 +19,100 @@ import os
 import requests
 
 # --- SOLO DEMO: endpoint practice fisso. Non modificare verso il conto reale. ---
-_BASE = "https://api-fxpractice.oanda.com"
-_INSTRUMENT = "XAU_USD"
+_BASE = "https://demo-api-capital.backend-capital.com"
+_EPIC = "GOLD"          # oro spot su Capital.com
 _TIMEOUT = 20
 
 
 def enabled() -> bool:
-    """True se sono configurati token e account demo."""
-    return bool(os.getenv("OANDA_API_TOKEN") and os.getenv("OANDA_ACCOUNT_ID"))
+    return bool(os.getenv("CAPITAL_API_KEY") and os.getenv("CAPITAL_IDENTIFIER")
+                and os.getenv("CAPITAL_PASSWORD"))
 
 
-def _headers() -> dict:
-    return {
-        "Authorization": f"Bearer {os.getenv('OANDA_API_TOKEN', '')}",
-        "Content-Type": "application/json",
-    }
-
-
-def _account_url(path: str) -> str:
-    acc = os.getenv("OANDA_ACCOUNT_ID", "")
-    return f"{_BASE}/v3/accounts/{acc}{path}"
-
-
-def summary() -> dict | None:
-    """Riepilogo conto demo: saldo e numero posizioni aperte."""
+def _login() -> tuple[str, str] | None:
+    """Crea una sessione e ritorna (CST, X-SECURITY-TOKEN). None se fallisce."""
     try:
-        r = requests.get(_account_url("/summary"), headers=_headers(), timeout=_TIMEOUT)
-        r.raise_for_status()
-        return r.json().get("account", {})
+        r = requests.post(
+            f"{_BASE}/api/v1/session",
+            headers={"X-CAP-API-KEY": os.getenv("CAPITAL_API_KEY", ""),
+                     "Content-Type": "application/json"},
+            json={"identifier": os.getenv("CAPITAL_IDENTIFIER", ""),
+                  "password": os.getenv("CAPITAL_PASSWORD", "")},
+            timeout=_TIMEOUT,
+        )
+        if r.status_code >= 300:
+            print(f"[broker] login fallito: {r.status_code} {r.text[:150]}")
+            return None
+        return r.headers.get("CST", ""), r.headers.get("X-SECURITY-TOKEN", "")
     except Exception as exc:  # noqa: BLE001
-        print(f"[broker] errore summary: {exc}")
+        print(f"[broker] errore login: {exc}")
         return None
 
 
-def has_open_position(acc: dict | None = None) -> bool:
-    acc = acc if acc is not None else summary()
-    if not acc:
-        return True  # in dubbio, NON apre (prudente)
-    return int(acc.get("openPositionCount", 0)) > 0
+def _h(cst: str, xst: str) -> dict:
+    return {"X-CAP-API-KEY": os.getenv("CAPITAL_API_KEY", ""),
+            "CST": cst, "X-SECURITY-TOKEN": xst, "Content-Type": "application/json"}
 
 
 def execute_if_flat(direction: str, entry: float, sl: float, tp: float,
                     risk_perc: float) -> str:
-    """Apre un ordine a mercato sul demo se non c'è già una posizione.
-    Size = rischio risk_perc% del saldo demo reale, in base alla distanza dallo SL.
-    """
-    acc = summary()
-    if acc is None:
-        return "no-account"
-    if has_open_position(acc):
-        return "posizione-gia-aperta"
+    tok = _login()
+    if not tok:
+        return "no-sessione"
+    cst, xst = tok
+    h = _h(cst, xst)
 
-    balance = float(acc.get("balance", 0) or 0)
+    # Seleziona il conto demo indicato (se fornito).
+    acc_id = os.getenv("CAPITAL_ACCOUNT_ID", "")
+    if acc_id:
+        try:
+            requests.put(f"{_BASE}/api/v1/session", headers=h,
+                         json={"accountId": acc_id}, timeout=_TIMEOUT)
+        except Exception:
+            pass
+
+    # Una posizione alla volta: se ce n'è già una aperta, salta.
+    try:
+        pos = requests.get(f"{_BASE}/api/v1/positions", headers=h, timeout=_TIMEOUT).json()
+        if pos.get("positions"):
+            return "posizione-gia-aperta"
+    except Exception as exc:  # noqa: BLE001
+        return f"errore-lettura-posizioni: {exc}"
+
+    # Saldo del conto demo per la size al rischio.
+    try:
+        accs = requests.get(f"{_BASE}/api/v1/accounts", headers=h, timeout=_TIMEOUT).json()
+        bal = 0.0
+        for a in accs.get("accounts", []):
+            if not acc_id or a.get("accountId") == acc_id:
+                bal = float(a.get("balance", {}).get("balance", 0) or 0)
+                break
+    except Exception as exc:  # noqa: BLE001
+        return f"errore-saldo: {exc}"
+
     sl_dist = abs(entry - sl)
-    if balance <= 0 or sl_dist <= 0:
+    if bal <= 0 or sl_dist <= 0:
         return "dati-non-validi"
 
-    # XAU_USD: 1 unità = 1 oncia, P/L ~ 1$ per unità per ogni 1$ di movimento.
-    units = max(1, round(balance * risk_perc / 100.0 / sl_dist))
-    if direction == "SHORT":
-        units = -units
+    # Size al rischio (approssimata: 1 unità ~ 1 oz). Su demo eventuali scostamenti
+    # sono innocui; si affina dopo il primo fill reale.
+    size = round(bal * risk_perc / 100.0 / sl_dist, 2)
+    if size <= 0:
+        size = 0.01
 
     body = {
-        "order": {
-            "type": "MARKET",
-            "instrument": _INSTRUMENT,
-            "units": str(units),
-            "timeInForce": "FOK",
-            "positionFill": "DEFAULT",
-            "stopLossOnFill": {"price": f"{sl:.3f}"},
-            "takeProfitOnFill": {"price": f"{tp:.3f}"},
-        }
+        "epic": _EPIC,
+        "direction": "BUY" if direction == "LONG" else "SELL",
+        "size": size,
+        "stopLevel": round(sl, 2),
+        "profitLevel": round(tp, 2),
+        "guaranteedStop": False,
     }
     try:
-        r = requests.post(_account_url("/orders"), headers=_headers(), json=body, timeout=_TIMEOUT)
+        r = requests.post(f"{_BASE}/api/v1/positions", headers=h, json=body, timeout=_TIMEOUT)
         if r.status_code >= 300:
             return f"errore-ordine: {r.status_code} {r.text[:200]}"
-        fill = r.json().get("orderFillTransaction")
-        if fill:
-            return f"ESEGUITO {direction} {units} @ {fill.get('price')} (SL {sl:.2f}/TP {tp:.2f})"
-        return f"ordine-inviato (nessun fill immediato): {r.json().get('orderCreateTransaction', {}).get('id')}"
+        ref = r.json().get("dealReference", "?")
+        return f"ESEGUITO {direction} size {size} (SL {sl:.2f}/TP {tp:.2f}) ref {ref}"
     except Exception as exc:  # noqa: BLE001
         return f"errore-eccezione: {exc}"
