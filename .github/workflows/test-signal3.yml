@@ -2,8 +2,6 @@ name: BOT 3 - Segnale di PROVA (canale 3)
 
 on:
   workflow_dispatch: {}
-  push:
-    branches: [main]      # (temporaneo) prova nel canale 3
 
 env:
   PROFILE: "rev"

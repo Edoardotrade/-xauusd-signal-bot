@@ -1,0 +1,23 @@
+name: Diagnostica canale 3
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [main]      # (temporaneo) diagnostica ora
+
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+      - run: pip install -r requirements.txt
+      - name: Diagnostica canale 3
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID_3: ${{ secrets.TELEGRAM_CHAT_ID_3 }}
+          PYTHONUNBUFFERED: "1"
+        run: python tg_diag3.py
