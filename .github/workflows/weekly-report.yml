@@ -4,8 +4,6 @@ on:
   schedule:
     - cron: "0 17 * * 5"   # venerdi 17:00 UTC (a mercato quasi chiuso)
   workflow_dispatch: {}
-  push:
-    branches: [main]       # (temporaneo) invia subito report+storico
 
 jobs:
   report:
