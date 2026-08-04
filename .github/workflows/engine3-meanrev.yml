@@ -4,6 +4,8 @@ on:
   schedule:
     - cron: "0 */5 * * *"   # rete di sicurezza
   workflow_dispatch: {}
+  push:
+    branches: [main]        # (temporaneo) riavvio sul canale 3
 
 concurrency:
   group: engine3            # gruppo separato: non tocca bot 1 e bot 2
@@ -37,7 +39,7 @@ jobs:
       - name: Avvia il motore sperimentale
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: "6710333146"   # chat privata dell'utente (esperimento)
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID_3 }}   # canale 3 dedicato
           PYTHONUNBUFFERED: "1"
         run: |
           git config user.name "signal-bot"
