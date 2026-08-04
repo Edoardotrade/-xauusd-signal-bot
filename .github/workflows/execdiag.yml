@@ -2,8 +2,6 @@ name: Diagnostico esecuzione
 
 on:
   workflow_dispatch: {}
-  push:
-    branches: [main]      # (temporaneo) riverifica con l'ID corretto
 
 permissions:
   contents: write

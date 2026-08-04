@@ -1,8 +1,0 @@
-CAPITAL_ACCOUNT_ID usato = '326817083894879390'
-  conto trovato: id='326817083894879390' saldo=10000.02
-  conto trovato: id='326830282329379998' saldo=3012.83
-spot (gold-api) = 4090.899902
-daily-like (sl 66, tp 99) -> ESEGUITO LONG size 1.52 (SL 4024.90/TP 4189.90) ref o_427a032b-4857-44c0-a9c9-79470f8d52ea
-15m-like (sl 22, tp 33) -> ESEGUITO LONG size 4.55 (SL 4068.90/TP 4123.90) ref o_f5dcd9a7-204e-45ee-9bf9-dda6f46aa75f
-stretto-10 (sl 10, tp 15) -> ESEGUITO LONG size 10.0 (SL 4080.90/TP 4105.90) ref o_58e90a94-ed0e-4981-a9eb-2953da0e13e4
-cleanup: OK: chiuse 3 posizione/i GOLD.
