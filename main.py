@@ -149,8 +149,8 @@ def run(interval: str = "1d", only_signals: bool = False, dry_run: bool = False,
         try:
             import broker
             if broker.enabled():
-                esito = broker.execute_if_flat(sig.direction, sig.price, sig.stop_loss,
-                                                sig.take_profit, cfg.risk_perc)
+                esito = broker.execute(sig.direction, sig.price, sig.stop_loss,
+                                       sig.take_profit, cfg.risk_perc)
                 print(f"[{date_str}] {tf_label}: Capital demo -> {esito}")
                 if esito.startswith("ESEGUITO"):
                     message += "\n\n🤖 <b>Trade APERTO sul conto demo</b> (esecuzione automatica)."

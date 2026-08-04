@@ -189,8 +189,10 @@ def close_all_gold() -> str:
     return f"OK: chiuse {chiuse} posizione/i GOLD."
 
 
-def execute_if_flat(direction: str, entry: float, sl: float, tp: float,
-                    risk_perc: float) -> str:
+def execute(direction: str, entry: float, sl: float, tp: float,
+            risk_perc: float) -> str:
+    """Apre SEMPRE una posizione per il segnale (nessun limite 'una alla volta').
+    Ogni setto tracciato dall'algoritmo diventa un trade a se' sul conto demo."""
     tok = _login()
     if not tok:
         return "no-sessione"
@@ -205,14 +207,6 @@ def execute_if_flat(direction: str, entry: float, sl: float, tp: float,
                          json={"accountId": acc_id}, timeout=_TIMEOUT)
         except Exception:
             pass
-
-    # Una posizione alla volta: se ce n'è già una aperta, salta.
-    try:
-        pos = requests.get(f"{_BASE}/api/v1/positions", headers=h, timeout=_TIMEOUT).json()
-        if pos.get("positions"):
-            return "posizione-gia-aperta"
-    except Exception as exc:  # noqa: BLE001
-        return f"errore-lettura-posizioni: {exc}"
 
     # Saldo del conto demo per la size al rischio.
     try:
