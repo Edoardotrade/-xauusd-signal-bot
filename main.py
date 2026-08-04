@@ -32,7 +32,7 @@ _TF_LABEL = {"1d": "Daily", "4h": "4H", "1h": "1H", "60m": "1H", "30m": "30M", "
 
 # Tetto di segnali al giorno per timeframe (giorni attivi -> ~10 in totale).
 # Override globale opzionale con la variabile MAX_SIGNALS_PER_DAY.
-_DAILY_CAP = {"Daily": 1, "4H": 2, "1H": 3, "15M": 4, "30M": 4}
+_DAILY_CAP = {"Daily": 1, "4H": 3, "1H": 4, "15M": 5, "30M": 5}
 
 
 def _broadcast(cfg: Config, message: str) -> int:
