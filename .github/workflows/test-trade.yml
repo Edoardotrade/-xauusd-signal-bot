@@ -2,8 +2,6 @@ name: Trade di PROVA sul conto demo
 
 on:
   workflow_dispatch: {}   # rilancia un trade di prova quando vuoi
-  push:
-    branches: [main]      # (temporaneo) test apertura + notifica ora
 
 jobs:
   testtrade:
