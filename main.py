@@ -143,6 +143,17 @@ def run(interval: str = "1d", only_signals: bool = False, dry_run: bool = False,
         print(f"[{date_str}] {tf_label}: raggiunto il massimo di {max_day} segnali oggi, salto.")
         return 0
 
+    # Esecuzione automatica su conto DEMO OANDA (se configurato e prezzi in spot).
+    if sig.direction in ("LONG", "SHORT") and sig.price_is_spot:
+        try:
+            import broker
+            if broker.enabled():
+                esito = broker.execute_if_flat(sig.direction, sig.price, sig.stop_loss,
+                                                sig.take_profit, cfg.risk_perc)
+                print(f"[{date_str}] {tf_label}: OANDA demo -> {esito}")
+        except Exception as exc:  # noqa: BLE001 - l'esecuzione ko non blocca l'avviso
+            print(f"[{date_str}] {tf_label}: errore esecutore OANDA -> {exc}", file=sys.stderr)
+
     inviati, errori = 0, []
     for chat_id in cfg.chat_ids:
         try:
