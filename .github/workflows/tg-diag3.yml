@@ -2,8 +2,6 @@ name: Diagnostica canale 3
 
 on:
   workflow_dispatch: {}
-  push:
-    branches: [main]      # (temporaneo) diagnostica ora
 
 jobs:
   diag:
