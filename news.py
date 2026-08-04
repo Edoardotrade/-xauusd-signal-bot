@@ -52,6 +52,20 @@ def tick(now: datetime | None = None) -> None:
             _broadcast(cfg, events.format_headsup(e))
             news_mark(e["key"])
 
+    # Report giornaliero del conto demo (una volta, alle 20:00 UTC).
+    if now.hour == 20 and now.minute == 0:
+        rkey = "ACCTREPORT-" + now.strftime("%Y-%m-%d")
+        if not news_seen(rkey):
+            try:
+                import broker
+                if broker.enabled():
+                    rep = broker.account_report()
+                    if rep:
+                        _broadcast(cfg, rep)
+            except Exception as exc:  # noqa: BLE001
+                print(f"[news] report conto ko: {exc}")
+            news_mark(rkey)
+
 
 def main() -> int:
     p = argparse.ArgumentParser(description="Avvisi eventi/news oro")

@@ -129,6 +129,51 @@ def test_trade() -> str:
     return f"OK-parziale: ordine accettato (ref {ref}) ma nessuna posizione da chiudere trovata. Controlla l'app."
 
 
+def account_report() -> str | None:
+    """Riepilogo del conto demo selezionato: saldo, P/L aperto, posizioni aperte.
+    Ritorna un testo HTML per Telegram, o None se fallisce."""
+    tok = _login()
+    if not tok:
+        return None
+    cst, xst = tok
+    h = _h(cst, xst)
+    acc_id = os.getenv("CAPITAL_ACCOUNT_ID", "")
+    if acc_id:
+        try:
+            requests.put(f"{_BASE}/api/v1/session", headers=h, json={"accountId": acc_id}, timeout=_TIMEOUT)
+        except Exception:
+            pass
+    saldo = pl_aperto = None
+    try:
+        accs = requests.get(f"{_BASE}/api/v1/accounts", headers=h, timeout=_TIMEOUT).json()
+        for a in accs.get("accounts", []):
+            if not acc_id or a.get("accountId") == acc_id:
+                b = a.get("balance", {})
+                saldo = b.get("balance")
+                pl_aperto = b.get("profitLoss")
+                break
+    except Exception as exc:  # noqa: BLE001
+        return f"⚠️ Report conto non disponibile ({exc})."
+
+    aperte = []
+    try:
+        pos = requests.get(f"{_BASE}/api/v1/positions", headers=h, timeout=_TIMEOUT).json()
+        for p in pos.get("positions", []):
+            if p.get("market", {}).get("epic") == _EPIC:
+                po = p.get("position", {})
+                aperte.append(f"• {po.get('direction')} size {po.get('size')} @ {po.get('level')} "
+                              f"(P/L {po.get('upl', '?')})")
+    except Exception:
+        pass
+
+    righe = ["📊 <b>Stato conto demo</b>",
+             f"Saldo: <b>{saldo}</b> · P/L aperto: {pl_aperto}",
+             f"Posizioni aperte: <b>{len(aperte)}</b>"]
+    righe += aperte
+    righe.append("<i>Conto demo, non è consulenza finanziaria.</i>")
+    return "\n".join(righe)
+
+
 def _select_account(h: dict) -> None:
     acc = os.getenv("CAPITAL_ACCOUNT_ID", "")
     if acc:
