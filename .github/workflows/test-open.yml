@@ -6,8 +6,6 @@ on:
       action:
         description: "open o close"
         default: "open"
-  push:
-    branches: [main]      # (temporaneo) apre subito una posizione visibile
 
 jobs:
   manage:
@@ -26,4 +24,4 @@ jobs:
           CAPITAL_PASSWORD: ${{ secrets.CAPITAL_PASSWORD }}
           CAPITAL_ACCOUNT_ID: ${{ secrets.CAPITAL_ACCOUNT_ID }}
           PYTHONUNBUFFERED: "1"
-        run: python broker_manage.py close
+        run: python broker_manage.py ${{ github.event.inputs.action || 'open' }}
