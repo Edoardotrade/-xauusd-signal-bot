@@ -2,8 +2,6 @@ name: Test connessione conto demo Capital
 
 on:
   workflow_dispatch: {}
-  push:
-    branches: [main]      # (temporaneo) verifica connessione ora
 
 jobs:
   check:
