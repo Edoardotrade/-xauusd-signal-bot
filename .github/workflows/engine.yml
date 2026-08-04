@@ -4,8 +4,6 @@ on:
   schedule:
     - cron: "0 */5 * * *"   # rete di sicurezza (i cron di GitHub sono inaffidabili)
   workflow_dispatch: {}
-  push:
-    branches: [main]        # (temporaneo) riavvio per pinnare il conto 1
 
 concurrency:
   group: engine

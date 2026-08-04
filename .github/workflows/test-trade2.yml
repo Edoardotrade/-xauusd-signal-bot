@@ -2,8 +2,6 @@ name: Trade di PROVA bot 2 (conto 2)
 
 on:
   workflow_dispatch: {}
-  push:
-    branches: [main]      # (temporaneo) test esecuzione sul conto 2
 
 jobs:
   testtrade2:
