@@ -179,3 +179,56 @@ def generate(df: pd.DataFrame, cfg: Config, spot_price: float | None = None) -> 
         decision_price=decision_price,
         confidence=confidence,
     )
+
+
+def generate_meanrev(df: pd.DataFrame, cfg: Config, spot_price: float | None = None) -> Signal:
+    """Strategia MEAN-REVERSION (RSI(2), stile Connors): compra gli eccessi al
+    ribasso, vende quelli al rialzo. Sperimentale, per intraday.
+    Non tocca la strategia trend dei bot 1/2."""
+    df = df.copy()
+    df["ema_fast"] = ema(df["close"], cfg.ema_fast)
+    df["ema_slow"] = ema(df["close"], cfg.ema_slow)
+    df["rsi"] = rsi(df["close"], cfg.rsi_period)
+    df["rsi2"] = rsi(df["close"], 2)
+    df["adx"] = adx(df, cfg.adx_period)
+    df["atr"] = atr(df, cfg.atr_period)
+
+    last = df.iloc[-1]
+    decision_price = float(last["close"])
+    r2 = float(last["rsi2"])
+    atr_val = float(last["atr"])
+    price = spot_price if spot_price is not None else decision_price
+
+    direction, reason = "NO-TRADE", ""
+    if r2 < 10:
+        direction = "LONG"
+        reason = f"RSI(2) {r2:.0f} < 10: ipervenduto → rimbalzo atteso (mean-reversion)."
+    elif r2 > 90:
+        direction = "SHORT"
+        reason = f"RSI(2) {r2:.0f} > 90: ipercomprato → ritracciamento atteso (mean-reversion)."
+    else:
+        reason = f"RSI(2) {r2:.0f}: nessun eccesso da sfruttare."
+
+    stop_loss = take_profit = rr = None
+    if direction == "LONG":
+        stop_loss = price - cfg.atr_sl_mult * atr_val
+        take_profit = price + cfg.atr_sl_mult * atr_val * cfg.risk_reward
+        rr = cfg.risk_reward
+    elif direction == "SHORT":
+        stop_loss = price + cfg.atr_sl_mult * atr_val
+        take_profit = price - cfg.atr_sl_mult * atr_val * cfg.risk_reward
+        rr = cfg.risk_reward
+
+    # Confidence: piu' l'RSI(2) e' estremo, piu' netto il segnale.
+    confidence = 0
+    if direction == "LONG":
+        confidence = int(min(100, 50 + (10 - r2) * 4))
+    elif direction == "SHORT":
+        confidence = int(min(100, 50 + (r2 - 90) * 4))
+
+    return Signal(
+        direction=direction, price=price, stop_loss=stop_loss, take_profit=take_profit,
+        rr=rr, ema_fast=float(last["ema_fast"]), ema_slow=float(last["ema_slow"]),
+        rsi=float(last["rsi"]), adx=float(last["adx"]), atr=atr_val, reason=reason,
+        price_is_spot=spot_price is not None, decision_price=decision_price, confidence=confidence,
+    )

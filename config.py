@@ -29,6 +29,7 @@ class Config:
     atr_sl_mult: float
     account_balance: float   # saldo del conto DEMO (per calcolare la size consigliata)
     risk_perc: float         # % del saldo rischiata per trade
+    strategy: str            # "trend" (default) oppure "meanrev" (RSI(2) reversion)
 
     @property
     def chat_ids(self) -> list[str]:
@@ -60,4 +61,5 @@ class Config:
             atr_sl_mult=float(_get("ATR_SL_MULT", "1.5")),
             account_balance=float(_get("ACCOUNT_BALANCE", "10000")),
             risk_perc=float(_get("RISK_PERC", "1.0")),
+            strategy=_get("STRATEGY", "trend"),
         )

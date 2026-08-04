@@ -1,0 +1,57 @@
+name: Motore BOT 3 sperimentale (RSI2 reversion)
+
+on:
+  schedule:
+    - cron: "0 */5 * * *"   # rete di sicurezza
+  workflow_dispatch: {}
+  push:
+    branches: [main]        # (temporaneo) avvio del bot 3
+
+concurrency:
+  group: engine3            # gruppo separato: non tocca bot 1 e bot 2
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  actions: write            # auto-riavvio
+
+env:
+  PROFILE: "rev"
+  PROFILE_LABEL: "BOT 3 SPERIMENTALE · RSI(2) reversion · solo osservazione"
+  STRATEGY: "meanrev"
+  ENGINE_TIMEFRAMES: "15m,1h"   # solo i timeframe dove il test dava edge
+  RISK_REWARD: "2.0"
+  ATR_SL_MULT: "1.5"
+  ACCOUNT_BALANCE: "10000"
+  RISK_PERC: "1.0"
+
+jobs:
+  engine3:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+      - run: pip install -r requirements.txt
+      - name: Avvia il motore sperimentale
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: "6710333146"   # chat privata dell'utente (esperimento)
+          PYTHONUNBUFFERED: "1"
+        run: |
+          git config user.name "signal-bot"
+          git config user.email "bot@users.noreply.github.com"
+          python engine.py
+      - name: Auto-riavvio (catena)
+        if: always()
+        run: |
+          for i in 1 2 3; do
+            curl -sf -X POST \
+              -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/${{ github.repository }}/actions/workflows/engine3-meanrev.yml/dispatches" \
+              -d '{"ref":"main"}' && { echo "re-dispatch OK"; break; } || { echo "tentativo $i fallito"; sleep 5; }
+          done

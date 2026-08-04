@@ -32,6 +32,9 @@ POLL = 20  # secondi tra un controllo e l'altro
 _LOG_FILE = os.path.basename(LOG_PATH)
 _STATE_FILE = os.path.basename(STATE_PATH)
 
+# Timeframe consentiti (se ENGINE_TIMEFRAMES e' impostato, es. "15m,1h").
+_ALLOWED = [t.strip() for t in os.getenv("ENGINE_TIMEFRAMES", "").split(",") if t.strip()]
+
 
 def due(now: datetime) -> list[tuple[str, bool]]:
     """Timeframe da eseguire in questo minuto: (interval, only_signals)."""
@@ -45,6 +48,8 @@ def due(now: datetime) -> list[tuple[str, bool]]:
             jobs.append(("4h", True))
         if h == 6:
             jobs.append(("1d", False))  # il Daily invia sempre (anche NO-TRADE)
+    if _ALLOWED:
+        jobs = [j for j in jobs if j[0] in _ALLOWED]
     return jobs
 
 

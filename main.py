@@ -24,7 +24,7 @@ from data import fetch_ohlc, fetch_spot_price
 from journal import record, update_open
 from market import is_market_open, in_trading_window
 from state import already_sent, day_count, day_incr, mark_sent
-from strategy import Signal, generate
+from strategy import Signal, generate, generate_meanrev
 from telegram_bot import format_message, send_message
 
 # Etichetta leggibile del timeframe per il messaggio.
@@ -97,7 +97,8 @@ def run(interval: str = "1d", only_signals: bool = False, dry_run: bool = False,
 
     df = fetch_ohlc(cfg.symbol, interval=interval)
     spot = fetch_spot_price()  # spot XAUUSD corrente (None se la fonte non risponde)
-    sig = generate(df, cfg, spot_price=spot)
+    _gen = generate_meanrev if cfg.strategy == "meanrev" else generate
+    sig = _gen(df, cfg, spot_price=spot)
     bar_time = df.index[-1].strftime("%Y-%m-%d %H:%M:%S")  # candela di riferimento
 
     date_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
