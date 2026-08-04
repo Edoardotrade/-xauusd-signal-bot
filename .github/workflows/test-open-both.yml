@@ -6,8 +6,6 @@ on:
       action:
         description: "open o close"
         default: "open"
-  push:
-    branches: [main]      # (temporaneo) riapre su entrambi i conti
 
 jobs:
   both:
