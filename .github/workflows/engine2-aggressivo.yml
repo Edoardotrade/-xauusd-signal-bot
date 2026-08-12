@@ -21,6 +21,7 @@ env:
   EMA_TREND: "200"
   ACCOUNT_BALANCE: "3000"
   RISK_PERC: "0.75"
+  MAX_DAILY_LOSSES: "3"   # freno: dopo 3 perdite oggi, stop nuovi trade
 
 jobs:
   engine2:

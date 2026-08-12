@@ -17,6 +17,8 @@ jobs:
   engine:
     runs-on: ubuntu-latest
     timeout-minutes: 350
+    env:
+      MAX_DAILY_LOSSES: "3"   # freno: dopo 3 perdite oggi, stop nuovi trade
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

@@ -110,6 +110,36 @@ def open_count() -> int:
     return sum(1 for r in _read() if r["status"] == "OPEN")
 
 
+def losses_today(now: datetime | None = None) -> int:
+    """Numero di trade CHIUSI IN PERDITA oggi (data ITALIANA), per questo profilo.
+
+    Serve al freno 'stop dopo N perdite al giorno': conta solo gli esiti LOSS
+    (le scadenze a 0R non contano come perdita). Usa la data di chiusura.
+    """
+    now = now or datetime.now(timezone.utc)
+    try:
+        from zoneinfo import ZoneInfo
+        rome = ZoneInfo("Europe/Rome")
+    except Exception:
+        rome = None
+    oggi = (now.astimezone(rome) if rome else now).strftime("%Y-%m-%d")
+    n = 0
+    for r in _read():
+        if r["status"] != "LOSS":
+            continue
+        closed = (r.get("closed_utc") or "").strip()
+        if not closed:
+            continue
+        try:
+            ts = datetime.strptime(closed, "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
+        except ValueError:
+            continue
+        giorno = (ts.astimezone(rome) if rome else ts).strftime("%Y-%m-%d")
+        if giorno == oggi:
+            n += 1
+    return n
+
+
 def recent_closed_text(n: int = 10) -> str:
     """Testo HTML con le ultime N operazioni CHIUSE (esito + R)."""
     chiusi = [r for r in _read() if r["status"] in ("WIN", "LOSS", "EXPIRED")]
