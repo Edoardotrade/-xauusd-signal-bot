@@ -4,8 +4,6 @@ on:
   schedule:
     - cron: "0 */5 * * *"   # rete di sicurezza
   workflow_dispatch: {}
-  push:
-    branches: [main]        # (temporaneo) riavvio per nuova fascia 09-21
 
 concurrency:
   group: engine3            # gruppo separato: non tocca bot 1 e bot 2
