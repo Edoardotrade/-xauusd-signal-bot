@@ -60,6 +60,6 @@ class Config:
             risk_reward=float(_get("RISK_REWARD", "1.5")),   # 1:1.5 -> win rate piu' alto, stesso profitto
             atr_sl_mult=float(_get("ATR_SL_MULT", "1.5")),
             account_balance=float(_get("ACCOUNT_BALANCE", "10000")),
-            risk_perc=float(_get("RISK_PERC", "1.0")),
+            risk_perc=float(_get("RISK_PERC", "0.75")),
             strategy=_get("STRATEGY", "trend"),
         )

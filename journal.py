@@ -105,6 +105,11 @@ def update_open(timeframe: str, df: pd.DataFrame) -> int:
     return closed
 
 
+def open_count() -> int:
+    """Numero di trade attualmente APERTI (per questo profilo)."""
+    return sum(1 for r in _read() if r["status"] == "OPEN")
+
+
 def recent_closed_text(n: int = 10) -> str:
     """Testo HTML con le ultime N operazioni CHIUSE (esito + R)."""
     chiusi = [r for r in _read() if r["status"] in ("WIN", "LOSS", "EXPIRED")]

@@ -10,7 +10,7 @@ env:
   ATR_SL_MULT: "1.5"
   EMA_TREND: "200"
   ACCOUNT_BALANCE: "3000"
-  RISK_PERC: "1.0"
+  RISK_PERC: "0.75"
 
 jobs:
   test:

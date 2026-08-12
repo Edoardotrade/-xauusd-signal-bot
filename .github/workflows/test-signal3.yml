@@ -9,7 +9,7 @@ env:
   STRATEGY: "meanrev"
   RISK_REWARD: "2.0"
   ACCOUNT_BALANCE: "10000"
-  RISK_PERC: "1.0"
+  RISK_PERC: "0.75"
 
 jobs:
   test:

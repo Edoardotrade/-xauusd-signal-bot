@@ -4,6 +4,8 @@ on:
   schedule:
     - cron: "0 */5 * * *"   # rete di sicurezza
   workflow_dispatch: {}
+  push:
+    branches: [main]        # (temporaneo) riavvio per rischio 0,75% + tetto
 
 concurrency:
   group: engine2            # gruppo separato: NON tocca il motore del bot 1
@@ -20,7 +22,7 @@ env:
   ATR_SL_MULT: "1.5"
   EMA_TREND: "200"
   ACCOUNT_BALANCE: "3000"
-  RISK_PERC: "1.0"
+  RISK_PERC: "0.75"
 
 jobs:
   engine2:

@@ -21,7 +21,7 @@ if hasattr(sys.stderr, "reconfigure"):
 
 from config import Config
 from data import fetch_ohlc, fetch_spot_price
-from journal import record, update_open
+from journal import record, update_open, open_count
 from market import is_market_open, in_trading_window
 from state import already_sent, day_count, day_incr, mark_sent
 from strategy import Signal, generate, generate_meanrev
@@ -111,9 +111,15 @@ def run(interval: str = "1d", only_signals: bool = False, dry_run: bool = False,
     # Registro paper-trading + capire se e' un SETUP NUOVO (record() ritorna
     # False se c'e' gia' un trade aperto o e' la stessa barra -> niente ri-invio).
     is_new_setup = True
+    max_open = int(os.getenv("MAX_OPEN_POSITIONS", "3"))
     if not dry_run:
         update_open(tf_label, df)
         if sig.direction in ("LONG", "SHORT"):
+            # Tetto esposizione: non aprire nuovi trade se ce ne sono gia' troppi aperti.
+            if open_count() >= max_open:
+                print(f"[{date_str}] {tf_label}: {max_open} posizioni gia' aperte "
+                      "(tetto esposizione), salto.")
+                return 0
             dist = cfg.atr_sl_mult * sig.atr
             entry_ref = sig.decision_price
             if sig.direction == "LONG":
