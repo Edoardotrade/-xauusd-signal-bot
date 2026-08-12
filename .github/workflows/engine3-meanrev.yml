@@ -17,7 +17,7 @@ env:
   PROFILE: "rev"
   PROFILE_LABEL: "BOT 3 SPERIMENTALE · RSI(2) reversion · solo osservazione"
   STRATEGY: "meanrev"
-  ENGINE_TIMEFRAMES: "15m,1h"   # solo i timeframe dove il test dava edge
+  ENGINE_TIMEFRAMES: "15m"   # solo 15M: l'1H in paper perdeva (0/4, -4R)
   RISK_REWARD: "2.0"
   ATR_SL_MULT: "1.5"
   ACCOUNT_BALANCE: "10000"
