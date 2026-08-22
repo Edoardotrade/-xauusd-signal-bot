@@ -23,6 +23,7 @@ env:
   DONCHIAN_N: "20"
   TRAILING_ATR: "3.0"   # uscita dinamica: lascia correre i vincitori
   MAX_BARS: "60"        # piu spazio al trailing per correre
+  NOTIFY_CLOSED: "1"    # messaggio Telegram a ogni trade chiuso (guadagno + conto)
   ACCOUNT_BALANCE: "10000"
   RISK_PERC: "0.75"
 

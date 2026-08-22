@@ -21,7 +21,7 @@ if hasattr(sys.stderr, "reconfigure"):
 
 from config import Config
 from data import fetch_ohlc, fetch_spot_price
-from journal import record, update_open, open_count, losses_today
+from journal import record, update_open, open_count, losses_today, realized_state
 from market import is_market_open, in_trading_window
 from state import already_sent, day_count, day_incr, mark_sent
 from strategy import Signal, generate, generate_meanrev, generate_breakout
@@ -76,6 +76,33 @@ def run_test() -> int:
     return 0 if inviati > 0 else 1
 
 
+def _notify_closed(cfg: Config, closed: list[dict]) -> None:
+    """Manda su Telegram un messaggio per ogni trade CHIUSO: esito in R + euro
+    e stato del conto ipotetico. Usata dal bot 3 (paper) con NOTIFY_CLOSED=1."""
+    _tot_R, _profit, saldo = realized_state(cfg.account_balance, cfg.risk_perc)
+    eur_per_R = cfg.account_balance * cfg.risk_perc / 100.0
+    label = os.getenv("PROFILE_LABEL", "").strip()
+    for r in closed:
+        try:
+            R = float(r.get("result_R") or 0)
+        except ValueError:
+            R = 0.0
+        em = "✅" if R > 0 else ("❌" if R < 0 else "➖")
+        eur = R * eur_per_R
+        perc = (saldo / cfg.account_balance - 1) * 100 if cfg.account_balance else 0
+        righe = []
+        if label:
+            righe.append(f"⚡ <b>{label}</b>")
+        righe += [
+            f"{em} <b>Trade CHIUSO</b> — {r.get('timeframe','')} {r.get('direction','')}",
+            f"<b>Risultato:</b> {R:+.2f}R = <b>{eur:+,.0f}€</b>",
+            "",
+            f"📒 <b>Conto ipotetico:</b> {saldo:,.0f}€ "
+            f"(da {cfg.account_balance:,.0f}€ · {perc:+.1f}%)",
+        ]
+        _broadcast(cfg, chr(10).join(righe))
+
+
 def run(interval: str = "1d", only_signals: bool = False, dry_run: bool = False,
         force: bool = False) -> int:
     cfg = Config.load()
@@ -118,7 +145,9 @@ def run(interval: str = "1d", only_signals: bool = False, dry_run: bool = False,
     max_open = int(os.getenv("MAX_OPEN_POSITIONS", "3"))
     max_daily_losses = int(os.getenv("MAX_DAILY_LOSSES", "0"))  # 0 = freno disattivo
     if not dry_run:
-        update_open(tf_label, df)
+        closed_trades = update_open(tf_label, df)
+        if closed_trades and os.getenv("NOTIFY_CLOSED", "0") not in ("0", "", "false", "False"):
+            _notify_closed(cfg, closed_trades)
         if sig.direction in ("LONG", "SHORT"):
             # Freno perdite giornaliere: dopo N perdite oggi, stop fino a domani.
             if max_daily_losses > 0 and losses_today() >= max_daily_losses:

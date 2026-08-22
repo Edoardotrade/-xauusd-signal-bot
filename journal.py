@@ -60,9 +60,9 @@ def record(timeframe: str, bar_time: str, direction: str,
     return True
 
 
-def update_open(timeframe: str, df: pd.DataFrame) -> int:
+def update_open(timeframe: str, df: pd.DataFrame) -> list[dict]:
     """Verifica i trade aperti di questo timeframe contro le candele successive.
-    Ritorna il numero di trade chiusi in questa esecuzione.
+    Ritorna la LISTA dei trade chiusi in questa esecuzione (per notifiche).
 
     Se TRAILING_ATR > 0 l'uscita usa uno STOP DINAMICO (trailing): lo stop
     segue il prezzo a TRAILING_ATR*ATR dal massimo/minimo raggiunto, senza
@@ -79,7 +79,7 @@ def update_open(timeframe: str, df: pd.DataFrame) -> int:
             atr_series = _atr(df, 14)
         except Exception:
             trailing = 0.0
-    closed = 0
+    closed = []
     for r in rows:
         if r["status"] != "OPEN" or r["timeframe"] != timeframe:
             continue
@@ -140,15 +140,25 @@ def update_open(timeframe: str, df: pd.DataFrame) -> int:
             r["status"] = "WIN" if esito > 0 else "LOSS"
             r["result_R"] = f"{esito:+.2f}"
             r["closed_utc"] = closed_ts.strftime("%Y-%m-%d %H:%M:%S")
-            closed += 1
+            closed.append(dict(r))
         elif trailing <= 0 and len(after) >= MAX_BARS:
             r["status"] = "EXPIRED"
             r["result_R"] = "0"
             r["closed_utc"] = after.index[MAX_BARS - 1].strftime("%Y-%m-%d %H:%M:%S")
-            closed += 1
+            closed.append(dict(r))
     if closed:
         _write(rows)
     return closed
+
+
+def realized_state(balance: float, risk_perc: float) -> tuple[float, float, float]:
+    """Stato realizzato del conto (paper). Ritorna (R_totali, profitto_euro, saldo_ora).
+    Ogni R vale risk_perc% del saldo iniziale (frazione fissa)."""
+    rs = [float(r["result_R"]) for r in _read() if r["status"] in ("WIN", "LOSS", "EXPIRED")]
+    tot_R = sum(rs)
+    eur_per_R = balance * risk_perc / 100.0
+    profit = tot_R * eur_per_R
+    return tot_R, profit, balance + profit
 
 
 def open_count() -> int:
