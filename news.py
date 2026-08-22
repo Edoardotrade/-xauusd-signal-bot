@@ -72,7 +72,7 @@ def tick(now: datetime | None = None) -> None:
         if not news_seen(wkey):
             try:
                 from journal import summary_text, recent_closed_text
-                msg = ("📅 <b>Riepilogo giornaliero</b>\n\n" + summary_text(cfg.risk_perc)
+                msg = ("📅 <b>Riepilogo giornaliero</b>\n\n" + summary_text(cfg.risk_perc, cfg.account_balance)
                        + "\n\n" + recent_closed_text(10))
                 _broadcast(cfg, msg)
             except Exception as exc:  # noqa: BLE001

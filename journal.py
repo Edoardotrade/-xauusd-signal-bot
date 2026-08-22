@@ -190,7 +190,7 @@ def _stats(chiusi: list[dict]) -> dict:
     }
 
 
-def summary_text(risk_perc: float = 1.0) -> str:
+def summary_text(risk_perc: float = 1.0, balance: float | None = None) -> str:
     """Report professionale del paper-trading (totale + per timeframe)."""
     rows = _read()
     chiusi = [r for r in rows if r["status"] in ("WIN", "LOSS")]
@@ -221,6 +221,7 @@ def summary_text(risk_perc: float = 1.0) -> str:
         f"• Trade chiusi: <b>{s['n']}</b> (vinti {s['wins']}, persi {s['n'] - s['wins']})",
         f"• Win rate: <b>{s['win_rate']:.1f}%</b>",
         f"• Risultato: <b>{s['net_R']:+.2f}R</b>  (~{rendimento:+.1f}% sul conto demo)",
+        *( [f"• Guadagno: <b>{s['net_R']*risk_perc/100*balance:+,.0f}€</b> su conto ipotetico da {balance:,.0f}€"] if balance else [] ),
         f"• Expectancy: <b>{s['expectancy']:+.3f}R</b>/trade",
         f"• Profit factor: <b>{pf}</b>  (&gt;1 = in profitto)",
         f"• Media vinta {s['avg_win']:+.2f}R · media persa {s['avg_loss']:+.2f}R",

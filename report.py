@@ -29,7 +29,7 @@ def main() -> int:
         return 0
 
     cfg = Config.load()
-    testo = summary_text(risk_perc=cfg.risk_perc) + "\n\n" + recent_closed_text(10)
+    testo = summary_text(risk_perc=cfg.risk_perc, balance=cfg.account_balance) + "\n\n" + recent_closed_text(10)
     inviati = 0
     for chat_id in cfg.chat_ids:
         try:
