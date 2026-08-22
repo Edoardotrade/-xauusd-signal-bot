@@ -15,9 +15,9 @@ permissions:
 
 env:
   PROFILE: "brk"
-  PROFILE_LABEL: "BOT 3 SPERIMENTALE · Breakout 1H + trailing 3xATR · solo osservazione"
+  PROFILE_LABEL: "BOT 3 SPERIMENTALE · Breakout 15m/1h/4h + trailing · solo osservazione"
   STRATEGY: "breakout"
-  ENGINE_TIMEFRAMES: "1h"   # il breakout ha edge solo sull1H (test)
+  ENGINE_TIMEFRAMES: "15m,1h,4h"   # piu trade: breakout+trailing positivo su tutti (test)
   RISK_REWARD: "1.5"
   ATR_SL_MULT: "1.5"
   DONCHIAN_N: "20"
