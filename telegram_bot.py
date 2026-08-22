@@ -16,7 +16,8 @@ def _stars(confidence: int) -> str:
     return "⭐" * n + "☆" * (5 - n)
 
 
-def _sizing_lines(sig: Signal, balance: float, risk_perc: float) -> list[str]:
+def _sizing_lines(sig: Signal, balance: float, risk_perc: float,
+                  trailing: bool = False) -> list[str]:
     """Blocco gestione del rischio: quanti lotti per rischiare risk_perc% del saldo."""
     sl_dist = abs(sig.price - sig.stop_loss)
     tp_dist = abs(sig.take_profit - sig.price)
@@ -25,17 +26,27 @@ def _sizing_lines(sig: Signal, balance: float, risk_perc: float) -> list[str]:
     risk_eur = balance * risk_perc / 100.0
     lots = risk_eur / (sl_dist * _CONTRACT_OZ)
     profit_eur = lots * tp_dist * _CONTRACT_OZ
-    return [
+    out = [
         "",
         f"💰 <b>Gestione rischio (DEMO {balance:,.0f})</b>",
         f"• Rischio {risk_perc:.1f}% = {risk_eur:,.0f} → <b>~{lots:.2f} lotti</b>",
-        f"• Distanza SL: {sl_dist:.2f} $ · TP: {tp_dist:.2f} $",
-        f"• Se va a target: <b>+{profit_eur:,.0f}</b> · se va a SL: −{risk_eur:,.0f}",
     ]
+    if trailing:
+        out += [
+            f"• Distanza SL iniziale: {sl_dist:.2f} $",
+            f"• Se va a SL: −{risk_eur:,.0f} · profitto: <b>aperto</b> (trailing, corre col trend)",
+        ]
+    else:
+        out += [
+            f"• Distanza SL: {sl_dist:.2f} $ · TP: {tp_dist:.2f} $",
+            f"• Se va a target: <b>+{profit_eur:,.0f}</b> · se va a SL: −{risk_eur:,.0f}",
+        ]
+    return out
 
 
 def format_message(symbol: str, sig: Signal, date_str: str, timeframe: str = "Daily",
-                   balance: float = 10000.0, risk_perc: float = 1.0) -> str:
+                   balance: float = 10000.0, risk_perc: float = 1.0,
+                   trailing: bool = False) -> str:
     emoji = _EMOJI.get(sig.direction, "⚪️")
     prezzo_label = "Prezzo spot XAUUSD" if sig.price_is_spot else "Prezzo (future GC=F)"
     lines = [
@@ -48,16 +59,23 @@ def format_message(symbol: str, sig: Signal, date_str: str, timeframe: str = "Da
         lines += [
             f"<b>Entry:</b> {sig.price:.2f}",
             f"<b>Stop Loss:</b> {sig.stop_loss:.2f}",
-            f"<b>Take Profit:</b> {sig.take_profit:.2f}",
-            f"<b>Rischio/Rendimento:</b> 1:{sig.rr:.1f}",
-            f"<b>Forza setup:</b> {_stars(sig.confidence)} <i>(indicativa, non predittiva)</i>",
         ]
+        if trailing:
+            lines.append("<b>Uscita:</b> dinamica (trailing stop) — lascia correre "
+                         "il vincitore, nessun target fisso")
+        else:
+            lines += [
+                f"<b>Take Profit:</b> {sig.take_profit:.2f}",
+                f"<b>Rischio/Rendimento:</b> 1:{sig.rr:.1f}",
+            ]
+        lines.append(f"<b>Forza setup:</b> {_stars(sig.confidence)} "
+                     "<i>(indicativa, non predittiva)</i>")
         # Voce di rischio: sui timeframe senza vantaggio storico (intraday) il
         # trade ha basse probabilità -> lo segnaliamo come rischioso.
         if timeframe != "Daily":
             lines.append("🔸 <b>Trade rischioso</b> — su questo timeframe le probabilità "
                          "sono basse: valuta con prudenza o lascialo perdere.")
-        lines += _sizing_lines(sig, balance, risk_perc)
+        lines += _sizing_lines(sig, balance, risk_perc, trailing)
     lines += [
         "",
         "<b>Indicatori:</b>",
