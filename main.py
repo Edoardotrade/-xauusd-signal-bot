@@ -95,7 +95,8 @@ def _notify_closed(cfg: Config, closed: list[dict]) -> None:
             righe.append(f"⚡ <b>{label}</b>")
         righe += [
             f"{em} <b>Trade CHIUSO</b> — {r.get('timeframe','')} {r.get('direction','')}",
-            f"<b>Risultato:</b> {R:+.2f}R = <b>{eur:+,.0f}€</b>",
+            f"<b>Questo trade:</b> {R:+.2f}R = <b>{eur:+,.0f}€</b>",
+            f"<b>Totale realizzato:</b> {_tot_R:+.2f}R = {_profit:+,.0f}€ <i>(tutti i trade)</i>",
             "",
             f"📒 <b>Conto ipotetico:</b> {saldo:,.0f}€ "
             f"(da {cfg.account_balance:,.0f}€ · {perc:+.1f}%)",
