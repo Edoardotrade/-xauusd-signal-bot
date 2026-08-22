@@ -29,7 +29,8 @@ class Config:
     atr_sl_mult: float
     account_balance: float   # saldo del conto DEMO (per calcolare la size consigliata)
     risk_perc: float         # % del saldo rischiata per trade
-    strategy: str            # "trend" (default) oppure "meanrev" (RSI(2) reversion)
+    strategy: str            # "trend" (default), "meanrev" (RSI(2)) o "breakout" (Donchian)
+    donchian_n: int          # n. barre per il canale di breakout (strategia breakout)
 
     @property
     def chat_ids(self) -> list[str]:
@@ -62,4 +63,5 @@ class Config:
             account_balance=float(_get("ACCOUNT_BALANCE", "10000")),
             risk_perc=float(_get("RISK_PERC", "0.75")),
             strategy=_get("STRATEGY", "trend"),
+            donchian_n=int(_get("DONCHIAN_N", "20")),
         )

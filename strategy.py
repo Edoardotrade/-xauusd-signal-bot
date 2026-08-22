@@ -232,3 +232,58 @@ def generate_meanrev(df: pd.DataFrame, cfg: Config, spot_price: float | None = N
         rsi=float(last["rsi"]), adx=float(last["adx"]), atr=atr_val, reason=reason,
         price_is_spot=spot_price is not None, decision_price=decision_price, confidence=confidence,
     )
+
+
+def generate_breakout(df: pd.DataFrame, cfg: Config, spot_price: float | None = None) -> Signal:
+    """Strategia BREAKOUT (canale di Donchian): compra la rottura del massimo
+    delle ultime N barre, vende la rottura del minimo. Momentum/continuazione.
+    Pensata per l'1H (dove il test mostra edge robusto). Sperimentale."""
+    df = df.copy()
+    N = max(2, int(cfg.donchian_n))
+    df["ema_fast"] = ema(df["close"], cfg.ema_fast)
+    df["ema_slow"] = ema(df["close"], cfg.ema_slow)
+    df["rsi"] = rsi(df["close"], cfg.rsi_period)
+    df["adx"] = adx(df, cfg.adx_period)
+    df["atr"] = atr(df, cfg.atr_period)
+    # Canale: massimo/minimo delle N barre PRECEDENTI (esclusa quella corrente).
+    df["hh"] = df["high"].rolling(N).max().shift(1)
+    df["ll"] = df["low"].rolling(N).min().shift(1)
+
+    last = df.iloc[-1]
+    decision_price = float(last["close"])
+    atr_val = float(last["atr"])
+    hh, ll = float(last["hh"]), float(last["ll"])
+    price = spot_price if spot_price is not None else decision_price
+
+    direction, reason = "NO-TRADE", ""
+    if decision_price > hh:
+        direction = "LONG"
+        reason = f"Breakout rialzista: chiusura sopra il massimo delle ultime {N} barre ({hh:.2f})."
+    elif decision_price < ll:
+        direction = "SHORT"
+        reason = f"Breakout ribassista: chiusura sotto il minimo delle ultime {N} barre ({ll:.2f})."
+    else:
+        reason = f"Nessuna rottura del canale {N} barre (max {hh:.2f} / min {ll:.2f})."
+
+    stop_loss = take_profit = rr = None
+    if direction == "LONG":
+        stop_loss = price - cfg.atr_sl_mult * atr_val
+        take_profit = price + cfg.atr_sl_mult * atr_val * cfg.risk_reward
+        rr = cfg.risk_reward
+    elif direction == "SHORT":
+        stop_loss = price + cfg.atr_sl_mult * atr_val
+        take_profit = price - cfg.atr_sl_mult * atr_val * cfg.risk_reward
+        rr = cfg.risk_reward
+
+    # Confidence: piu' l'ADX e' forte, piu' netto il breakout.
+    confidence = 0
+    if direction in ("LONG", "SHORT"):
+        a = float(last["adx"])
+        confidence = int(min(100, 45 + max(0.0, a - cfg.adx_min) * 2.5))
+
+    return Signal(
+        direction=direction, price=price, stop_loss=stop_loss, take_profit=take_profit,
+        rr=rr, ema_fast=float(last["ema_fast"]), ema_slow=float(last["ema_slow"]),
+        rsi=float(last["rsi"]), adx=float(last["adx"]), atr=atr_val, reason=reason,
+        price_is_spot=spot_price is not None, decision_price=decision_price, confidence=confidence,
+    )
