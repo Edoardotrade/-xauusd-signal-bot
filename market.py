@@ -22,12 +22,12 @@ except Exception:  # tzdata mancante: fallback semplice (UTC+2, estate)
     _ROME = None
 
 # Fascia operativa in ora ITALIANA (configurabile). Trade solo tra le due ore.
-_TRADE_START = int(os.getenv("TRADE_START_HOUR", "8"))
-_TRADE_END = int(os.getenv("TRADE_END_HOUR", "20"))
+_TRADE_START = int(os.getenv("TRADE_START_HOUR", "9"))
+_TRADE_END = int(os.getenv("TRADE_END_HOUR", "21"))
 
 
 def in_trading_window(now: datetime | None = None) -> tuple[bool, str]:
-    """True se l'ora italiana e' nella fascia operativa (default 08:00-20:00)."""
+    """True se l'ora italiana e' nella fascia operativa (default 09:00-21:00)."""
     now = now or datetime.now(timezone.utc)
     if _ROME is not None:
         h = now.astimezone(_ROME).hour
