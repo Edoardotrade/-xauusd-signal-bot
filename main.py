@@ -88,12 +88,14 @@ def run(interval: str = "1d", only_signals: bool = False, dry_run: bool = False,
         print(f"[{ts}] Mercato chiuso: {motivo} Nessun invio. (usa --force per forzare)")
         return 0
 
-    # Fascia operativa: si opera solo tra le 08:00 e le 22:00 ora italiana.
-    in_win, motivo_win = in_trading_window()
-    if not in_win and not force:
-        ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
-        print(f"[{ts}] {motivo_win} (usa --force per forzare)")
-        return 0
+    # Fascia operativa: filtra solo l'INTRADAY (il rumore delle ore scarse).
+    # Il Daily e' l'edge robusto: deve poter partire sempre, a qualsiasi ora.
+    if interval != "1d":
+        in_win, motivo_win = in_trading_window()
+        if not in_win and not force:
+            ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+            print(f"[{ts}] {motivo_win} (usa --force per forzare)")
+            return 0
 
     df = fetch_ohlc(cfg.symbol, interval=interval)
     spot = fetch_spot_price()  # spot XAUUSD corrente (None se la fonte non risponde)
