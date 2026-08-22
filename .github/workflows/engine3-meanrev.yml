@@ -15,12 +15,14 @@ permissions:
 
 env:
   PROFILE: "brk"
-  PROFILE_LABEL: "BOT 3 SPERIMENTALE · Breakout 1H (Donchian 20) · solo osservazione"
+  PROFILE_LABEL: "BOT 3 SPERIMENTALE · Breakout 1H + trailing 3xATR · solo osservazione"
   STRATEGY: "breakout"
   ENGINE_TIMEFRAMES: "1h"   # il breakout ha edge solo sull1H (test)
   RISK_REWARD: "1.5"
   ATR_SL_MULT: "1.5"
   DONCHIAN_N: "20"
+  TRAILING_ATR: "3.0"   # uscita dinamica: lascia correre i vincitori
+  MAX_BARS: "60"        # piu spazio al trailing per correre
   ACCOUNT_BALANCE: "10000"
   RISK_PERC: "0.75"
 

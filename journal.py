@@ -23,7 +23,7 @@ FIELDS = [
     "entry_ref", "sl_ref", "tp_ref", "rr",
     "status", "result_R", "closed_utc",
 ]
-MAX_BARS = 30  # dopo 30 barre senza esito il trade e' considerato scaduto
+MAX_BARS = int(os.getenv("MAX_BARS", "30"))  # barre max prima di scadenza/uscita
 
 
 def _read() -> list[dict]:
@@ -62,10 +62,23 @@ def record(timeframe: str, bar_time: str, direction: str,
 
 def update_open(timeframe: str, df: pd.DataFrame) -> int:
     """Verifica i trade aperti di questo timeframe contro le candele successive.
-    Ritorna il numero di trade chiusi in questa esecuzione."""
+    Ritorna il numero di trade chiusi in questa esecuzione.
+
+    Se TRAILING_ATR > 0 l'uscita usa uno STOP DINAMICO (trailing): lo stop
+    segue il prezzo a TRAILING_ATR*ATR dal massimo/minimo raggiunto, senza
+    take-profit fisso -> lascia correre i vincitori. Altrimenti SL/TP fissi.
+    """
     rows = _read()
     if not rows:
         return 0
+    trailing = float(os.getenv("TRAILING_ATR", "0") or 0)
+    atr_series = None
+    if trailing > 0:
+        try:
+            from strategy import atr as _atr
+            atr_series = _atr(df, 14)
+        except Exception:
+            trailing = 0.0
     closed = 0
     for r in rows:
         if r["status"] != "OPEN" or r["timeframe"] != timeframe:
@@ -78,24 +91,57 @@ def update_open(timeframe: str, df: pd.DataFrame) -> int:
         sl, tp, rr = float(r["sl_ref"]), float(r["tp_ref"]), float(r["rr"])
         esito = None
         closed_ts = None
-        for ts, row in after.head(MAX_BARS).iterrows():
-            hi, lo = float(row["high"]), float(row["low"])
-            if direction == "LONG":
-                if lo <= sl:
-                    esito = -1.0; closed_ts = ts; break
-                if hi >= tp:
-                    esito = rr; closed_ts = ts; break
-            else:  # SHORT
-                if hi >= sl:
-                    esito = -1.0; closed_ts = ts; break
-                if lo <= tp:
-                    esito = rr; closed_ts = ts; break
+        seg = after.head(MAX_BARS)
+
+        if trailing > 0:
+            # --- Uscita con trailing stop (lascia correre i vincitori) ---
+            entry = float(r["entry_ref"])
+            risk = abs(entry - sl)
+            if risk <= 0:
+                continue
+            stop = sl
+            ext = entry  # massimo (LONG) / minimo (SHORT) raggiunto
+            for ts, row in seg.iterrows():
+                hi, lo = float(row["high"]), float(row["low"])
+                if atr_series is not None and ts in atr_series.index:
+                    a = float(atr_series.loc[ts])
+                else:
+                    a = risk / 1.5
+                if a != a or a <= 0:  # NaN o non valido
+                    a = risk / 1.5
+                if direction == "LONG":
+                    if lo <= stop:
+                        esito = (stop - entry) / risk; closed_ts = ts; break
+                    ext = max(ext, hi); stop = max(stop, ext - trailing * a)
+                else:
+                    if hi >= stop:
+                        esito = (entry - stop) / risk; closed_ts = ts; break
+                    ext = min(ext, lo); stop = min(stop, ext + trailing * a)
+            if esito is None and len(after) >= MAX_BARS:
+                lastc = float(seg.iloc[-1]["close"])
+                esito = ((lastc - entry) if direction == "LONG" else (entry - lastc)) / risk
+                closed_ts = seg.index[-1]
+        else:
+            # --- Uscita classica: SL / TP fissi ---
+            for ts, row in seg.iterrows():
+                hi, lo = float(row["high"]), float(row["low"])
+                if direction == "LONG":
+                    if lo <= sl:
+                        esito = -1.0; closed_ts = ts; break
+                    if hi >= tp:
+                        esito = rr; closed_ts = ts; break
+                else:  # SHORT
+                    if hi >= sl:
+                        esito = -1.0; closed_ts = ts; break
+                    if lo <= tp:
+                        esito = rr; closed_ts = ts; break
+
         if esito is not None:
             r["status"] = "WIN" if esito > 0 else "LOSS"
             r["result_R"] = f"{esito:+.2f}"
             r["closed_utc"] = closed_ts.strftime("%Y-%m-%d %H:%M:%S")
             closed += 1
-        elif len(after) >= MAX_BARS:
+        elif trailing <= 0 and len(after) >= MAX_BARS:
             r["status"] = "EXPIRED"
             r["result_R"] = "0"
             r["closed_utc"] = after.index[MAX_BARS - 1].strftime("%Y-%m-%d %H:%M:%S")
