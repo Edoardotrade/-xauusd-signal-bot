@@ -28,6 +28,7 @@ _API = f"https://api.telegram.org/bot{_TOKEN}"
 _MAX_RUNTIME = int(os.getenv("MAX_RUNTIME", str(5 * 3600 + 30 * 60)))  # ~5h30m
 _POLL = 25  # secondi di long polling per richiesta
 _NOTE_FILE = os.path.join(os.path.dirname(__file__), "richieste_jarvis.md")
+_ALLOWED = [c.strip() for c in os.getenv("ALLOWED_CHATS", "").split(",") if c.strip()]
 _DASH = "—"  # em-dash
 
 
@@ -93,9 +94,17 @@ def _pending_notes() -> list[str]:
         return [l.strip() for l in fh if l.strip().startswith("- [ ]")]
 
 
+def _allowed(chat_id) -> bool:
+    """True se la chat puo' usare i comandi. Se ALLOWED_CHATS e' vuoto: aperto a tutti."""
+    return (not _ALLOWED) or (str(chat_id) in _ALLOWED)
+
+
 def _handle(text: str, chat_id: int | str) -> None:
     body = text.strip()
     cmd = body.lower().split("@")[0].split()[0] if body else ""
+    if cmd in ("/analisi", "/jarvis", "/note", "/start", "/help") and not _allowed(chat_id):
+        print(f"[listener] comando da chat non autorizzata {chat_id}, ignorato", flush=True)
+        return
     if cmd == "/analisi":
         print(f"[listener] /analisi da {chat_id}", flush=True)
         try:

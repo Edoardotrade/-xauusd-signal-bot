@@ -28,6 +28,7 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          ALLOWED_CHATS: ${{ secrets.ALLOWED_CHATS }}
           PYTHONUNBUFFERED: "1"
         run: python listener.py
       - name: Auto-riavvio (catena)
