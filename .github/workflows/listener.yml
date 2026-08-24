@@ -10,7 +10,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write          # per salvare le note /jarvis nel repo
   actions: write            # per auto-riavviarsi
 
 jobs:
