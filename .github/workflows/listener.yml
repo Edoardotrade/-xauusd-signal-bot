@@ -1,0 +1,42 @@
+name: Ascoltatore comandi (/analisi)
+
+on:
+  schedule:
+    - cron: "0 */5 * * *"   # rete di sicurezza
+  workflow_dispatch: {}
+
+concurrency:
+  group: listener            # gruppo separato: non tocca i motori dei segnali
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: write            # per auto-riavviarsi
+
+jobs:
+  listener:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+      - run: pip install -r requirements.txt
+      - name: Avvia l'ascoltatore
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          PYTHONUNBUFFERED: "1"
+        run: python listener.py
+      - name: Auto-riavvio (catena)
+        if: always()
+        run: |
+          for i in 1 2 3; do
+            curl -sf -X POST \
+              -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/${{ github.repository }}/actions/workflows/listener.yml/dispatches" \
+              -d '{"ref":"main"}' && { echo "re-dispatch OK"; break; } || { echo "tentativo $i fallito"; sleep 5; }
+          done
