@@ -1,2 +1,2 @@
 logged_utc,timeframe,bar_time,direction,entry_ref,sl_ref,tp_ref,rr,status,result_R,closed_utc
-2026-08-28 16:00:20,4H,2026-08-28 12:00:00,SHORT,4587.90,4647.79,4498.06,1.50,OPEN,,
+2026-08-28 16:00:20,4H,2026-08-28 12:00:00,SHORT,4587.90,4647.79,4498.06,1.50,WIN,+2.38,2026-09-03 00:00:00
