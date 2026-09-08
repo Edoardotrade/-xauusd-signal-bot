@@ -40,40 +40,54 @@ def fetch_ohlc(symbol: str, interval: str = "1d", period: str | None = None) -> 
 
     if period is None:
         period = _DEFAULT_RANGE.get(interval, "1y")
-    resp = requests.get(
-        _CHART_URL.format(symbol=symbol),
-        params={"range": period, "interval": interval},
-        headers=_HEADERS,
-        timeout=30,
+
+    # Retry con host alternati (query1/query2): nel cloud Yahoo a volte blocca o
+    # limita gli IP dei server, specie sulle richieste intraday (15m/1h).
+    hosts = ["query1.finance.yahoo.com", "query2.finance.yahoo.com"]
+    last_err: Exception | None = None
+    for attempt in range(4):
+        host = hosts[attempt % len(hosts)]
+        try:
+            resp = requests.get(
+                f"https://{host}/v8/finance/chart/{symbol}",
+                params={"range": period, "interval": interval},
+                headers=_HEADERS,
+                timeout=30,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+
+            result = (data.get("chart") or {}).get("result")
+            if not result:
+                err = (data.get("chart") or {}).get("error")
+                raise RuntimeError(f"Nessun dato per '{symbol}'. Risposta Yahoo: {err}")
+
+            node = result[0]
+            timestamps = node.get("timestamp")
+            quote = (node.get("indicators", {}).get("quote") or [{}])[0]
+            if not timestamps or not quote:
+                raise RuntimeError(f"Dati incompleti per '{symbol}'. Simbolo errato?")
+
+            df = pd.DataFrame(
+                {
+                    "open": quote.get("open"),
+                    "high": quote.get("high"),
+                    "low": quote.get("low"),
+                    "close": quote.get("close"),
+                    "volume": quote.get("volume"),
+                },
+                index=pd.to_datetime(timestamps, unit="s"),
+            )
+            df = df.dropna(subset=["open", "high", "low", "close"])
+            if df.empty:
+                raise RuntimeError(f"Nessuna candela valida per '{symbol}'.")
+            return df
+        except Exception as exc:  # noqa: BLE001 - ritenta con l'altro host
+            last_err = exc
+            time.sleep(1.5)
+    raise RuntimeError(
+        f"fetch_ohlc fallita per '{symbol}' ({interval}) dopo 4 tentativi: {last_err}"
     )
-    resp.raise_for_status()
-    data = resp.json()
-
-    result = (data.get("chart") or {}).get("result")
-    if not result:
-        err = (data.get("chart") or {}).get("error")
-        raise RuntimeError(f"Nessun dato per '{symbol}'. Risposta Yahoo: {err}")
-
-    node = result[0]
-    timestamps = node.get("timestamp")
-    quote = (node.get("indicators", {}).get("quote") or [{}])[0]
-    if not timestamps or not quote:
-        raise RuntimeError(f"Dati incompleti per '{symbol}'. Simbolo errato?")
-
-    df = pd.DataFrame(
-        {
-            "open": quote.get("open"),
-            "high": quote.get("high"),
-            "low": quote.get("low"),
-            "close": quote.get("close"),
-            "volume": quote.get("volume"),
-        },
-        index=pd.to_datetime(timestamps, unit="s"),
-    )
-    df = df.dropna(subset=["open", "high", "low", "close"])
-    if df.empty:
-        raise RuntimeError(f"Nessuna candela valida per '{symbol}'.")
-    return df
 
 
 def fetch_daily(symbol: str, period: str = "1y") -> pd.DataFrame:
