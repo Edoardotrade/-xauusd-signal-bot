@@ -15,7 +15,7 @@ permissions:
 
 env:
   PROFILE: "mix"
-  PROFILE_LABEL: "BOT 3 · MIX (meglio di bot 1+2) · scaglioni 1.5R+2.0R · DEMO 300€"
+  PROFILE_LABEL: "BOT 3 · MIX (meglio di bot 1+2) · scaglioni 1.5R+2.0R · DEMO 500$"
   STRATEGY: "trend"
   # timeframe: come bot 1/2 (tutti) -> nessun ENGINE_TIMEFRAMES
   RISK_REWARD: "1.5"
@@ -27,7 +27,7 @@ env:
   MAX_BARS: "60"
   MAX_DAILY_LOSSES: "3" # freno come bot 1/2
   NOTIFY_CLOSED: "1"    # messaggio Telegram a ogni trade chiuso
-  ACCOUNT_BALANCE: "300"
+  ACCOUNT_BALANCE: "500"
   RISK_PERC: "0.75"
 
 jobs:
