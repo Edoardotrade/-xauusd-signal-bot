@@ -46,7 +46,7 @@ def _sizing_lines(sig: Signal, balance: float, risk_perc: float,
 
 def format_message(symbol: str, sig: Signal, date_str: str, timeframe: str = "Daily",
                    balance: float = 10000.0, risk_perc: float = 1.0,
-                   trailing: bool = False) -> str:
+                   trailing: bool = False, scale: bool = False) -> str:
     emoji = _EMOJI.get(sig.direction, "⚪️")
     prezzo_label = "Prezzo spot XAUUSD" if sig.price_is_spot else "Prezzo (future GC=F)"
     lines = [
@@ -60,7 +60,10 @@ def format_message(symbol: str, sig: Signal, date_str: str, timeframe: str = "Da
             f"<b>Entry:</b> {sig.price:.2f}",
             f"<b>Stop Loss:</b> {sig.stop_loss:.2f}",
         ]
-        if trailing:
+        if scale:
+            lines.append(f"<b>Uscita:</b> a scaglioni — meta' a +1.5R ({sig.take_profit:.2f}), "
+                         "poi il resto corre col trailing")
+        elif trailing:
             lines.append("<b>Uscita:</b> dinamica (trailing stop) — lascia correre "
                          "il vincitore, nessun target fisso")
         else:
@@ -75,7 +78,7 @@ def format_message(symbol: str, sig: Signal, date_str: str, timeframe: str = "Da
         if timeframe != "Daily":
             lines.append("🔸 <b>Trade rischioso</b> — su questo timeframe le probabilità "
                          "sono basse: valuta con prudenza o lascialo perdere.")
-        lines += _sizing_lines(sig, balance, risk_perc, trailing)
+        lines += _sizing_lines(sig, balance, risk_perc, trailing or scale)
     lines += [
         "",
         "<b>Indicatori:</b>",

@@ -132,10 +132,11 @@ def run(interval: str = "1d", only_signals: bool = False, dry_run: bool = False,
     bar_time = df.index[-1].strftime("%Y-%m-%d %H:%M:%S")  # candela di riferimento
 
     date_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
-    trailing_on = float(os.getenv("TRAILING_ATR", "0") or 0) > 0
+    scale_on = float(os.getenv("SCALE_OUT", "0") or 0) > 0
+    trailing_on = float(os.getenv("TRAILING_ATR", "0") or 0) > 0 and not scale_on
     message = format_message(cfg.symbol, sig, date_str, timeframe=tf_label,
                              balance=cfg.account_balance, risk_perc=cfg.risk_perc,
-                             trailing=trailing_on)
+                             trailing=trailing_on, scale=scale_on)
     label = os.getenv("PROFILE_LABEL", "").strip()
     if label:
         message = f"⚡ <b>{label}</b>\n" + message
