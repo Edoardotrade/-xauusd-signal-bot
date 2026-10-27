@@ -62,7 +62,7 @@ def format_message(symbol: str, sig: Signal, date_str: str, timeframe: str = "Da
         ]
         if scale:
             lines.append(f"<b>Uscita:</b> a scaglioni — meta' a +1.5R ({sig.take_profit:.2f}), "
-                         "poi il resto corre col trailing")
+                         "l'altra meta' a +2.0R")
         elif trailing:
             lines.append("<b>Uscita:</b> dinamica (trailing stop) — lascia correre "
                          "il vincitore, nessun target fisso")

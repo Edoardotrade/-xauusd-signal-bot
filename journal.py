@@ -73,14 +73,15 @@ def update_open(timeframe: str, df: pd.DataFrame) -> list[dict]:
         return 0
     trailing = float(os.getenv("TRAILING_ATR", "0") or 0)
     scale = float(os.getenv("SCALE_OUT", "0") or 0)       # >0 = uscita a scaglioni (versione B)
-    t1_mult = float(os.getenv("SCALE_T1", "1.5"))          # primo target: meta' posizione qui
+    t1_mult = float(os.getenv("SCALE_T1", "1.5"))          # 1o target (bot1): meta' posizione
+    t2_mult = float(os.getenv("SCALE_T2", "2.0"))          # 2o target (bot2): l'altra meta'
     atr_series = None
-    if trailing > 0 or scale > 0:
+    if trailing > 0:
         try:
             from strategy import atr as _atr
             atr_series = _atr(df, 14)
         except Exception:
-            trailing = 0.0; scale = 0.0
+            trailing = 0.0
     closed = []
     for r in rows:
         if r["status"] != "OPEN" or r["timeframe"] != timeframe:
@@ -96,46 +97,46 @@ def update_open(timeframe: str, df: pd.DataFrame) -> list[dict]:
         seg = after.head(MAX_BARS)
 
         if scale > 0:
-            # --- Uscita a SCAGLIONI (versione B): meta' a +t1_mult R, runner col trailing ---
+            # --- Uscita a SCAGLIONI (versione B PURA): meta' a +t1 (bot1), meta' a +t2 (bot2) ---
             entry = float(r["entry_ref"])
             risk = abs(entry - sl)
             if risk <= 0:
                 continue
             t1p = entry + t1_mult * risk if direction == "LONG" else entry - t1_mult * risk
+            t2p = entry + t2_mult * risk if direction == "LONG" else entry - t2_mult * risk
+            half1 = 0.5 * t1_mult   # R bloccati con la prima meta' al target 1
             half_done = False
-            stop = sl
-            ext = entry
-            trun = trailing if trailing > 0 else 3.0  # trailing del runner
             for ts, row in seg.iterrows():
                 hi, lo = float(row["high"]), float(row["low"])
-                a = float(atr_series.loc[ts]) if (atr_series is not None and ts in atr_series.index) else risk / 1.5
-                if a != a or a <= 0:
-                    a = risk / 1.5
                 if not half_done:
+                    # entrambe le meta' col medesimo stop finche' non si prende la prima
                     if direction == "LONG":
-                        if lo <= stop:
+                        if lo <= sl:
                             esito = -1.0; closed_ts = ts; break
                         if hi >= t1p:
-                            half_done = True; stop = entry; ext = t1p  # meta' presa, runner a pareggio
+                            half_done = True   # meta' presa a +t1; il runner tiene lo stop e punta t2
                     else:
-                        if hi >= stop:
+                        if hi >= sl:
                             esito = -1.0; closed_ts = ts; break
                         if lo <= t1p:
-                            half_done = True; stop = entry; ext = t1p
+                            half_done = True
                 else:
+                    # runner (seconda meta'): stop originale, target t2 (stile bot 2)
                     if direction == "LONG":
-                        if lo <= stop:
-                            esito = 0.75 + 0.5 * ((stop - entry) / risk); closed_ts = ts; break
-                        ext = max(ext, hi); stop = max(stop, ext - trun * a)
+                        if lo <= sl:
+                            esito = half1 + 0.5 * (-1.0); closed_ts = ts; break
+                        if hi >= t2p:
+                            esito = half1 + 0.5 * t2_mult; closed_ts = ts; break
                     else:
-                        if hi >= stop:
-                            esito = 0.75 + 0.5 * ((entry - stop) / risk); closed_ts = ts; break
-                        ext = min(ext, lo); stop = min(stop, ext + trun * a)
+                        if hi >= sl:
+                            esito = half1 + 0.5 * (-1.0); closed_ts = ts; break
+                        if lo <= t2p:
+                            esito = half1 + 0.5 * t2_mult; closed_ts = ts; break
             if esito is None and len(after) >= MAX_BARS:
                 if half_done:
                     lastc = float(seg.iloc[-1]["close"])
                     run_r = ((lastc - entry) if direction == "LONG" else (entry - lastc)) / risk
-                    esito = 0.75 + 0.5 * run_r
+                    esito = half1 + 0.5 * run_r
                 else:
                     esito = 0.0
                 closed_ts = seg.index[-1]
