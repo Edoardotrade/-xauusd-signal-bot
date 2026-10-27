@@ -1,4 +1,4 @@
-name: Motore BOT 3 sperimentale (Breakout 1H)
+name: Motore BOT 3 (Daily trend + trailing)
 
 on:
   schedule:
@@ -14,15 +14,15 @@ permissions:
   actions: write            # auto-riavvio
 
 env:
-  PROFILE: "brk"
-  PROFILE_LABEL: "BOT 3 SPERIMENTALE · Breakout 4H + trailing · solo osservazione"
-  STRATEGY: "breakout"
-  ENGINE_TIMEFRAMES: "4h"   # SOLO 4H: 15m/1h in forward-test hanno PERSO (-976€ sim)
+  PROFILE: "d3"
+  PROFILE_LABEL: "BOT 3 · Daily trend + trailing · solo osservazione"
+  STRATEGY: "trend"
+  ENGINE_TIMEFRAMES: "1d"   # SOLO Daily: l'unico edge robusto in ogni test
   RISK_REWARD: "1.5"
   ATR_SL_MULT: "1.5"
-  DONCHIAN_N: "20"
-  TRAILING_ATR: "3.0"   # uscita dinamica: lascia correre i vincitori
-  MAX_BARS: "60"        # piu spazio al trailing per correre
+  EMA_TREND: "200"
+  TRAILING_ATR: "3.0"   # trailing: cattura in pieno i grandi trend del Daily
+  MAX_BARS: "60"        # ~3 mesi per far correre il trend
   NOTIFY_CLOSED: "1"    # messaggio Telegram a ogni trade chiuso (guadagno + conto)
   ACCOUNT_BALANCE: "10000"
   RISK_PERC: "0.75"
