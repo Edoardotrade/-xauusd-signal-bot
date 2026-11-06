@@ -45,7 +45,6 @@
     "Daily|2026-11-06": 1
   },
   "_news_seen": [
-    "AGENDA-2026-08-02",
     "AGENDA-2026-08-03",
     "ISM Manufacturing PMI|2026-08-03T14:00",
     "AGENDA-2026-08-04",
@@ -344,7 +343,8 @@
     "WINRATE-2026-11-04",
     "AGENDA-2026-11-05",
     "ACCTREPORT-2026-11-05",
-    "WINRATE-2026-11-05"
+    "WINRATE-2026-11-05",
+    "AGENDA-2026-11-06"
   ],
   "Daily": "2026-11-06 05:00:00"
 }
