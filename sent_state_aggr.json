@@ -45,7 +45,6 @@
     "15M|2026-11-06": 2
   },
   "_news_seen": [
-    "WINRATE-2026-08-05",
     "AGENDA-2026-08-06",
     "AGENDA-2026-08-07",
     "Average Hourly Earnings m/m|2026-08-07T12:30",
@@ -344,7 +343,8 @@
     "ACCTREPORT-2026-11-06",
     "WINRATE-2026-11-06",
     "AGENDA-2026-11-07",
-    "ACCTREPORT-2026-11-07"
+    "ACCTREPORT-2026-11-07",
+    "WINRATE-2026-11-07"
   ],
   "Daily": "2026-11-06 05:00:00"
 }
